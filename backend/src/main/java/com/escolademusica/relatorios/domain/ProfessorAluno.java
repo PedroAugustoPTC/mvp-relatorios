@@ -43,6 +43,10 @@ public class ProfessorAluno {
   public ProfessorAluno(UUID professorId, UUID alunoId) {
     this.professorId = professorId;
     this.alunoId = alunoId;
+    // criado_em e NOT NULL no banco (V3). O DEFAULT now() da migracao nao ajuda aqui: o Hibernate
+    // inclui a coluna no INSERT com valor null explicito, o que viola a constraint. Sem esta linha,
+    // POST /api/v1/alunos com professorIds falha com 500.
+    this.criadoEm = OffsetDateTime.now();
   }
 
   public UUID getId() {

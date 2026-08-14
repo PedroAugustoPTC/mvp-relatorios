@@ -1,14 +1,18 @@
 package com.escolademusica.relatorios.controller;
 
 import com.escolademusica.relatorios.domain.exception.AlunoNaoAssociadoException;
+import com.escolademusica.relatorios.domain.exception.AutenticacaoBloqueadaException;
+import com.escolademusica.relatorios.domain.exception.CodigoVinculacaoInvalidoException;
 import com.escolademusica.relatorios.domain.exception.ConflitoException;
 import com.escolademusica.relatorios.domain.exception.CredenciaisInvalidasException;
 import com.escolademusica.relatorios.domain.exception.PeriodoSemRelatoriosException;
 import com.escolademusica.relatorios.domain.exception.RecursoNaoEncontradoException;
+import com.escolademusica.relatorios.dto.ErroBloqueioDto;
 import com.escolademusica.relatorios.dto.ErroDto;
 import com.escolademusica.relatorios.gateway.AudioNaoProcessavelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -99,6 +103,30 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErroDto> tratarCredenciaisInvalidas(CredenciaisInvalidasException ex) {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
         .body(new ErroDto("CREDENCIAIS_INVALIDAS", ex.getMessage()));
+  }
+
+  /** Codigo de vinculacao invalido ou expirado no portal do professor (spec 002, FR-004). */
+  @ExceptionHandler(CodigoVinculacaoInvalidoException.class)
+  public ResponseEntity<ErroDto> tratarCodigoInvalido(CodigoVinculacaoInvalidoException ex) {
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(
+            new ErroDto(
+                "CODIGO_INVALIDO",
+                "Código inválido ou expirado. Peça um novo código à secretaria da escola."));
+  }
+
+  /**
+   * Tentativas de autenticacao bloqueadas temporariamente (spec 002, FR-004a). Alem do corpo com
+   * {@code retryAfterSeconds}, envia o header padrao {@code Retry-After}.
+   */
+  @ExceptionHandler(AutenticacaoBloqueadaException.class)
+  public ResponseEntity<ErroBloqueioDto> tratarAutenticacaoBloqueada(
+      AutenticacaoBloqueadaException ex) {
+    return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+        .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getRetryAfterSeconds()))
+        .body(
+            new ErroBloqueioDto(
+                "BLOQUEADO_TEMPORARIAMENTE", ex.getMessage(), ex.getRetryAfterSeconds()));
   }
 
   /** Fallback generico — nunca expor stack trace ou mensagem interna crua ao cliente. */

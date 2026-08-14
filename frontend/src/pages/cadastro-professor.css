@@ -1,0 +1,71 @@
+/*
+ * Entrega do codigo de vinculacao.
+ *
+ * E o unico momento da secretaria em que uma tela produz algo que precisa ser lido em voz alta ao
+ * telefone, entao e o unico lugar que recebe o gradiente de destaque do portal — aqui reduzido a um
+ * fio no topo do cartao, para o codigo continuar sendo o elemento mais forte da tela.
+ */
+
+.adm-entrega {
+  position: relative;
+  max-width: 34rem;
+  margin-top: 24px;
+  padding: 24px;
+  border: 1px solid var(--adm-roxo);
+  border-radius: var(--adm-raio-card);
+  background-color: var(--adm-surface-elevada);
+  overflow: hidden;
+  animation: adm-surgir 320ms ease-out;
+}
+
+.adm-entrega::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 4px;
+  background: var(--app-gradiente-destaque);
+}
+
+.adm-entrega__rotulo {
+  margin-top: 18px;
+  font-size: 0.85rem;
+}
+
+.adm-entrega__codigo {
+  margin: 6px 0 4px;
+  color: var(--adm-texto);
+  font-family: 'Cascadia Mono', Consolas, 'SF Mono', ui-monospace, monospace;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  word-break: break-all;
+}
+
+.adm-entrega__validade {
+  font-size: 0.82rem;
+  color: var(--adm-texto-tenue);
+}
+
+.adm-entrega__instrucao {
+  margin-top: 16px;
+  max-width: 46ch;
+}
+
+@keyframes adm-surgir {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-entrega {
+    animation: none;
+  }
+}

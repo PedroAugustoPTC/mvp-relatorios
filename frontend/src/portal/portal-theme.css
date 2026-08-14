@@ -1,0 +1,210 @@
+@import '../theme/tokens.css';
+
+/*
+ * Design tokens do portal do professor (T018).
+ *
+ * Os valores de cor e ritmo vivem em `src/theme/tokens.css`, compartilhados com a secretaria.
+ * Aqui eles apenas ganham o prefixo `--portal-*` usado pelas telas do portal, e a folha define os
+ * elementos base proprios do portal.
+ *
+ * Escopo: apenas a arvore `.portal`.
+ */
+
+.portal {
+  /* Superficies */
+  --portal-bg: var(--app-bg);
+  --portal-surface: var(--app-surface);
+  --portal-surface-elevada: var(--app-surface-elevada);
+  --portal-surface-sutil: var(--app-surface-sutil);
+  --portal-borda: var(--app-borda);
+
+  /* Texto */
+  --portal-texto: var(--app-texto);
+  --portal-texto-suave: var(--app-texto-suave);
+  --portal-texto-tenue: var(--app-texto-tenue);
+
+  /* Destaque */
+  --portal-roxo: var(--app-roxo);
+  --portal-roxo-forte: var(--app-roxo-forte);
+  --portal-roxo-suave: var(--app-roxo-suave);
+  --portal-gradiente-destaque: var(--app-gradiente-destaque);
+
+  /* Estados */
+  --portal-sucesso: var(--app-sucesso);
+  --portal-alerta: var(--app-alerta);
+  --portal-erro: var(--app-erro);
+
+  /* Forma e ritmo */
+  --portal-raio-card: var(--app-raio-card);
+  --portal-raio-pill: var(--app-raio-pill);
+  --portal-raio-campo: var(--app-raio-campo);
+  --portal-espaco: var(--app-espaco);
+  --portal-sombra-card: var(--app-sombra-card);
+
+  font-family: var(--app-fonte);
+  color: var(--portal-texto);
+  background-color: var(--portal-bg);
+  min-height: 100vh;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tipografia
+ * ------------------------------------------------------------------------- */
+
+.portal h1,
+.portal h2,
+.portal h3 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.portal h1 {
+  font-size: 1.75rem;
+}
+
+.portal h2 {
+  font-size: 1.5rem;
+}
+
+.portal h3 {
+  font-size: 1.05rem;
+}
+
+.portal p {
+  margin: 0;
+  color: var(--portal-texto-suave);
+}
+
+/* ---------------------------------------------------------------------------
+ * Elementos base compartilhados pelas telas do portal
+ * ------------------------------------------------------------------------- */
+
+.portal-card {
+  background-color: var(--portal-surface-elevada);
+  border: 1px solid var(--portal-borda);
+  border-radius: var(--portal-raio-card);
+  padding: var(--portal-espaco);
+  box-shadow: var(--portal-sombra-card);
+}
+
+.portal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--portal-raio-pill);
+  background-color: var(--portal-surface-sutil);
+  border: 1px solid var(--portal-borda);
+  color: var(--portal-texto-suave);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.portal-pill[aria-pressed='true'],
+.portal-pill.ativo {
+  background-color: var(--portal-roxo);
+  border-color: var(--portal-roxo);
+  color: #fff;
+}
+
+.portal-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--portal-raio-campo);
+  border: 1px solid transparent;
+  background-color: var(--portal-roxo);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.portal-botao:hover:not(:disabled) {
+  background-color: var(--portal-roxo-forte);
+}
+
+.portal-botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.portal-botao--secundario {
+  background-color: transparent;
+  border-color: var(--portal-borda);
+  color: var(--portal-texto);
+}
+
+.portal-botao--secundario:hover:not(:disabled) {
+  background-color: var(--portal-surface-sutil);
+}
+
+.portal-campo {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--portal-raio-campo);
+  border: 1px solid var(--portal-borda);
+  background-color: var(--portal-surface);
+  color: var(--portal-texto);
+  font-size: 1rem;
+}
+
+.portal-campo::placeholder {
+  color: var(--portal-texto-tenue);
+}
+
+.portal-rotulo {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--portal-texto-suave);
+}
+
+/* Avatar circular com iniciais, equivalente aos avatares dos cards da referencia. */
+.portal-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--portal-roxo-suave);
+  color: var(--portal-roxo);
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.portal-erro {
+  color: var(--portal-erro);
+}
+
+.portal-sucesso {
+  color: var(--portal-sucesso);
+}
+
+/* Foco sempre visivel — navegacao por teclado completa (research.md secao 8). */
+.portal :focus-visible {
+  outline: 2px solid var(--portal-roxo);
+  outline-offset: 2px;
+}
+
+/*
+ * Conteudo apenas para leitores de tela: rotulos de campos que, visualmente, se explicam pelo
+ * placeholder ou pelo icone. Vive no tema (e nao no CSS do layout) para estar disponivel em toda
+ * tela do portal, inclusive as que ficam fora do PortalLayout, como a de entrada.
+ */
+.portal-visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -43,6 +43,18 @@ security:
   n8n-service-token: ${N8N_SERVICE_TOKEN}
   jwt:
     secret: ${JWT_SECRET}
+    # Janela de inatividade da sessao do portal do professor (FR-005). O token e reemitido a cada
+    # requisicao autenticada (sessao deslizante), entao este valor mede inatividade, nao o tempo
+    # total de sessao.
+    professor-session-hours: ${WEB_SESSION_HOURS:12}
+  cors:
+    # Origem do frontend autorizada a chamar /api/v1/** direto do navegador (research.md secao 4).
+    # Aceita multiplas origens separadas por virgula.
+    allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:8080}
+  web-login:
+    # Rate limit do login por codigo de vinculacao no portal (FR-004a).
+    max-attempts: ${WEB_LOGIN_MAX_ATTEMPTS:5}
+    lockout-minutes: ${WEB_LOGIN_LOCKOUT_MINUTES:15}
 
 pdf:
   storage:
