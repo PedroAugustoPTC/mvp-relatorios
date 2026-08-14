@@ -24,6 +24,14 @@ frontend/.env.local
 # Claude Code local settings
 .claude/settings.local.json
 
+# Speckit (spec-kit): apenas a constitution do projeto e versionada
+.specify/*
+!.specify/memory/
+.specify/memory/*
+!.specify/memory/constitution.md
+specs/
+.claude/skills/speckit-*/
+
 # IDE / OS
 .vscode/
 .idea/
