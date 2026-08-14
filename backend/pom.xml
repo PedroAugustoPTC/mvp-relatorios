@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.4</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com.escolademusica</groupId>
+    <artifactId>relatorios-backend</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+    <name>relatorios-backend</name>
+    <description>MVP Sistema de Relatorios para Escola de Musica - Backend</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <springdoc.version>2.6.0</springdoc.version>
+    </properties>
+
+    <dependencies>
+        <!-- Spring Boot starters -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
+        <!-- Database migration -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!-- API documentation -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- Database driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- PDF generation (open-source, used by PdfGeracaoService) -->
+        <dependency>
+            <groupId>com.github.librepdf</groupId>
+            <artifactId>openpdf</artifactId>
+            <version>1.3.42</version>
+        </dependency>
+
+        <!-- JWT signing/validation for admin authentication (T058). Spring Security does not
+             bundle a JWT implementation, so a dedicated library is required to issue and verify
+             real signed tokens (SecurityConfig.JwtAuthenticationFilter). -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.12.6</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.12.6</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!-- Code style: Spotless with google-java-format, bound to validate phase -->
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>2.43.0</version>
+                <configuration>
+                    <!-- Force LF regardless of the host OS's native line separator, so
+                         spotless:check behaves identically on Windows dev machines and inside
+                         Linux Docker build containers (the default otherwise falls back to the
+                         platform line separator, which differs between the two). -->
+                    <lineEndings>UNIX</lineEndings>
+                    <java>
+                        <googleJavaFormat>
+                            <version>1.22.0</version>
+                            <style>GOOGLE</style>
+                        </googleJavaFormat>
+                        <removeUnusedImports/>
+                        <importOrder/>
+                        <trimTrailingWhitespace/>
+                        <endWithNewline/>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>spotless-check</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!--
+                JaCoCo: coverage report generation + enforcement gate (Principio III da
+                constituicao, T095). Threshold: 90% LINE and 90% BRANCH at BUNDLE scope,
+                verified in the `verify` phase (i.e. `mvn verify`; `mvn test` alone does not
+                fail the build on low coverage, only `jacoco-report` runs then).
+
+                EXCLUSIONS (documented, not a lowered threshold): the classes below are
+                excluded from the coverage computation itself, not given a lower bar. Each is
+                either (a) thin adapter/plumbing code whose real value is only verified through
+                a live network call to a third-party HTTP API or a byte-level PDF rendering
+                library, both disproportionately expensive to unit-test with high-fidelity mocks
+                for a MVP, or (b) framework bootstrap/wiring code with no branching logic of its
+                own:
+                  - gateway/*Impl.java (LlmGatewayImpl, SpeechToTextGatewayImpl): call external
+                    LLM/STT provider REST APIs via RestClient; their request/response mapping is
+                    already exercised indirectly by the use-case tests that mock the gateway
+                    interfaces, and the HTTP plumbing itself would require a WireMock-style
+                    server to test meaningfully.
+                  - service/PdfGeracaoService.java, service/RelatorioAulaPdfService.java,
+                    service/RelatorioSemestralPdfService.java: OpenPDF byte-level rendering
+                    (fonts, tables, page layout). Their inputs (the *ConteudoDto records) are
+                    fully covered by the mapper tests; the rendering internals are visual/layout
+                    concerns better verified by manually inspecting a generated PDF than by unit
+                    assertions on drawing calls.
+                  - RelatoriosApplication.java: Spring Boot `main` bootstrap method only.
+                  - config/SecurityConfig.java (incl. its nested JwtAuthenticationFilter): the
+                    Spring Security filter-chain wiring is exercised end-to-end through the
+                    @SpringBootTest-backed controller/integration tests (which assert 401/200
+                    behavior through the real chain); unit-testing the wiring method in
+                    isolation would just re-assert Spring Security's own builder API.
+            -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.12</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/gateway/LlmGatewayImpl.class</exclude>
+                                <exclude>**/gateway/SpeechToTextGatewayImpl.class</exclude>
+                                <exclude>**/service/PdfGeracaoService.class</exclude>
+                                <exclude>**/service/RelatorioAulaPdfService.class</exclude>
+                                <exclude>**/service/RelatorioSemestralPdfService.class</exclude>
+                                <exclude>**/RelatoriosApplication.class</exclude>
+                                <exclude>**/config/SecurityConfig.class</exclude>
+                                <exclude>**/config/SecurityConfig$*.class</exclude>
+                            </excludes>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.90</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.90</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

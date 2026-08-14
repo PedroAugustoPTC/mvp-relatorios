@@ -1,0 +1,312 @@
+{
+  "name": "HistoricoTelegram - Consultar historico de relatorios via Telegram (US4)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "trigger-comando-historico",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 300],
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "if-comando-historico",
+      "name": "If Comando /historico",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "" },
+          "conditions": [
+            {
+              "leftValue": "={{$json.message.text}}",
+              "rightValue": "/historico",
+              "operator": { "type": "string", "operation": "startsWith" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "check-vinculacao",
+      "name": "Professor Vinculado?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 220],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/telegram/{{$json.message.from.id}}/professor",
+        "options": { "response": { "response": { "neverError": true } } },
+        "headerParametersUi": {
+          "parameter": [
+            { "name": "X-N8N-Service-Token", "value": "={{$env.N8N_SERVICE_TOKEN}}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-vinculado",
+      "name": "If Vinculado",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 220],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "" },
+          "conditions": [
+            {
+              "leftValue": "={{$json.statusCode}}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "solicitar-codigo-vinculacao",
+      "name": "Solicitar Codigo de Vinculacao",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [880, 460],
+      "parameters": {
+        "chatId": "={{$json.message.from.id}}",
+        "text": "Voce ainda nao esta vinculado. Envie o codigo de vinculacao recebido do administrador.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": { "id": "telegram_bot_credentials", "name": "Telegram Bot - Escola de Musica" }
+      }
+    },
+    {
+      "id": "listar-alunos",
+      "name": "Listar Alunos do Professor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 220],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/professores/{{$json.professorId}}/alunos",
+        "headerParametersUi": {
+          "parameter": [
+            { "name": "X-N8N-Service-Token", "value": "={{$env.N8N_SERVICE_TOKEN}}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "menu-selecao-aluno",
+      "name": "Exibir Menu de Selecao de Aluno",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1100, 220],
+      "parameters": {
+        "chatId": "={{$json.message.from.id}}",
+        "text": "De qual aluno voce quer consultar o historico? Responda com o nome do aluno.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": { "id": "telegram_bot_credentials", "name": "Telegram Bot - Escola de Musica" }
+      }
+    },
+    {
+      "id": "wait-selecao-aluno",
+      "name": "Aguardar Selecao do Aluno",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [1320, 220],
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": { "id": "telegram_bot_credentials", "name": "Telegram Bot - Escola de Musica" }
+      }
+    },
+    {
+      "id": "get-historico",
+      "name": "GET /professores/{professorId}/alunos/{alunoId}/historico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 220],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/professores/{{$json.professorId}}/alunos/{{$json.alunoId}}/historico",
+        "options": { "response": { "response": { "neverError": true } } },
+        "headerParametersUi": {
+          "parameter": [
+            { "name": "X-N8N-Service-Token", "value": "={{$env.N8N_SERVICE_TOKEN}}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-acesso-permitido",
+      "name": "If Acesso Permitido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1760, 220],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "" },
+          "conditions": [
+            {
+              "leftValue": "={{$json.statusCode}}",
+              "rightValue": 200,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "informar-acesso-negado",
+      "name": "Informar Acesso Negado (403)",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1980, 380],
+      "parameters": {
+        "chatId": "={{$json.message.from.id}}",
+        "text": "Este aluno nao esta associado a voce. Nao e possivel consultar o historico dele (codigo: {{$json.codigo}}).",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": { "id": "telegram_bot_credentials", "name": "Telegram Bot - Escola de Musica" }
+      }
+    },
+    {
+      "id": "if-historico-vazio",
+      "name": "If Historico Vazio",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1980, 140],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "" },
+          "conditions": [
+            {
+              "leftValue": "={{$json.relatorios.length}}",
+              "rightValue": 0,
+              "operator": { "type": "number", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "informar-historico-vazio",
+      "name": "Informar Historico Vazio",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2200, 60],
+      "parameters": {
+        "chatId": "={{$json.message.from.id}}",
+        "text": "Ainda nao ha relatorios aprovados no historico de {{$json.aluno.nome}}.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": { "id": "telegram_bot_credentials", "name": "Telegram Bot - Escola de Musica" }
+      }
+    },
+    {
+      "id": "formatar-historico",
+      "name": "Formatar Lista de Historico",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 220],
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const aluno = $input.first().json.aluno;\nconst relatorios = $input.first().json.relatorios;\n\nconst linhas = relatorios.map((item, indice) => {\n  if (item.tipo === 'AULA') {\n    return `${indice + 1}. Aula em ${item.dataAula} - status ${item.status} - PDF: ${item.pdfUrl}`;\n  }\n  return `${indice + 1}. Semestral ${item.periodoInicio} a ${item.periodoFim} - status ${item.status} - PDF: ${item.pdfUrl}`;\n});\n\nconst texto = `Historico de ${aluno.nome} (${relatorios.length} relatorio(s) aprovado(s)):\\n\\n${linhas.join('\\n')}`;\n\nreturn [{ json: { chatId: $input.first().json.message ? $input.first().json.message.from.id : undefined, texto } }];\n"
+      }
+    },
+    {
+      "id": "enviar-historico-formatado",
+      "name": "Enviar Historico Formatado",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2420, 220],
+      "parameters": {
+        "chatId": "={{$json.chatId}}",
+        "text": "={{$json.texto}}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": { "id": "telegram_bot_credentials", "name": "Telegram Bot - Escola de Musica" }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "If Comando /historico", "type": "main", "index": 0 }]]
+    },
+    "If Comando /historico": {
+      "main": [[{ "node": "Professor Vinculado?", "type": "main", "index": 0 }]]
+    },
+    "Professor Vinculado?": {
+      "main": [[{ "node": "If Vinculado", "type": "main", "index": 0 }]]
+    },
+    "If Vinculado": {
+      "main": [
+        [{ "node": "Listar Alunos do Professor", "type": "main", "index": 0 }],
+        [{ "node": "Solicitar Codigo de Vinculacao", "type": "main", "index": 0 }]
+      ]
+    },
+    "Listar Alunos do Professor": {
+      "main": [[{ "node": "Exibir Menu de Selecao de Aluno", "type": "main", "index": 0 }]]
+    },
+    "Exibir Menu de Selecao de Aluno": {
+      "main": [[{ "node": "Aguardar Selecao do Aluno", "type": "main", "index": 0 }]]
+    },
+    "Aguardar Selecao do Aluno": {
+      "main": [
+        [
+          {
+            "node": "GET /professores/{professorId}/alunos/{alunoId}/historico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /professores/{professorId}/alunos/{alunoId}/historico": {
+      "main": [[{ "node": "If Acesso Permitido", "type": "main", "index": 0 }]]
+    },
+    "If Acesso Permitido": {
+      "main": [
+        [{ "node": "If Historico Vazio", "type": "main", "index": 0 }],
+        [{ "node": "Informar Acesso Negado (403)", "type": "main", "index": 0 }]
+      ]
+    },
+    "If Historico Vazio": {
+      "main": [
+        [{ "node": "Informar Historico Vazio", "type": "main", "index": 0 }],
+        [{ "node": "Formatar Lista de Historico", "type": "main", "index": 0 }]
+      ]
+    },
+    "Formatar Lista de Historico": {
+      "main": [[{ "node": "Enviar Historico Formatado", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "description": "US4 (T090): Telegram Trigger com comando /historico -> checagem de vinculacao -> selecao de aluno -> GET /internal/v1/professores/{professorId}/alunos/{alunoId}/historico -> formatacao e envio da lista de relatorios aprovados. Trata o caso 403 (aluno nao associado ao professor, FR-018) informando o professor sem expor detalhes tecnicos. Placeholders de credenciais/URLs devem ser configurados no ambiente n8n de destino (BACKEND_BASE_URL, N8N_SERVICE_TOKEN, credencial telegram_bot_credentials)."
+  }
+}

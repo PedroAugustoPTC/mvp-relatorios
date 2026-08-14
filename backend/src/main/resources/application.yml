@@ -1,0 +1,67 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: relatorios-backend
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+# Integracoes externas (segredos apenas via variaveis de ambiente - Principio V da constituicao)
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN}
+
+stt:
+  api-key: ${STT_API_KEY}
+  provider:
+    url: ${STT_PROVIDER_URL:https://stt-provider.example.com/v1/transcricoes}
+
+llm:
+  api-key: ${LLM_API_KEY}
+  provider:
+    url: ${LLM_PROVIDER_URL:https://llm-provider.example.com/v1/completions}
+
+security:
+  cpf-encryption-key: ${CPF_ENCRYPTION_KEY}
+  n8n-service-token: ${N8N_SERVICE_TOKEN}
+  jwt:
+    secret: ${JWT_SECRET}
+
+pdf:
+  storage:
+    path: ${PDF_STORAGE_PATH:/app/storage/pdfs}
+
+escola:
+  nome: ${ESCOLA_NOME:Escola de Música}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized

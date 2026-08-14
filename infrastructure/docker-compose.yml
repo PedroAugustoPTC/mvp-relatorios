@@ -1,0 +1,139 @@
+version: "3.8"
+
+# Docker Compose para o MVP Sistema de Relatórios para Escola de Música.
+#
+# Serviços:
+#   - frontend: SPA React servida por Nginx
+#   - backend:  API Spring Boot (Java 21)
+#   - postgres: fonte oficial de dados
+#   - n8n:      orquestração dos fluxos de IA (transcrição, geração de relatórios, Telegram)
+#
+# IMPORTANTE (segurança): postgres e n8n NÃO devem ser expostos publicamente sem autenticação.
+# As portas de postgres e n8n abaixo são publicadas apenas em 127.0.0.1 (loopback) para uso em
+# desenvolvimento local. Em produção, remova a publicação de portas dessas duas seções (deixe-as
+# acessíveis apenas pela rede interna do Docker Compose) ou coloque-as atrás de um proxy reverso
+# autenticado.
+
+services:
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    image: escola-musica-frontend:local
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - escola-musica-net
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    image: escola-musica-backend:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Banco de dados
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-escola_musica}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-escola_musica}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      # Integrações externas (valores reais vêm do arquivo .env, não versionado)
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      STT_API_KEY: ${STT_API_KEY}
+      LLM_API_KEY: ${LLM_API_KEY}
+      CPF_ENCRYPTION_KEY: ${CPF_ENCRYPTION_KEY}
+      N8N_SERVICE_TOKEN: ${N8N_SERVICE_TOKEN}
+      # Diretório de armazenamento de PDFs gerados (ver volume pdf_storage abaixo)
+      PDF_STORAGE_PATH: /app/storage/pdfs
+    volumes:
+      - pdf_storage:/app/storage/pdfs
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - escola-musica-net
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-escola_musica}
+      POSTGRES_USER: ${POSTGRES_USER:-escola_musica}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres:/docker-entrypoint-initdb.d:ro
+    ports:
+      # Publicado apenas em loopback para acesso local via cliente SQL durante desenvolvimento.
+      # Não exponha esta porta em produção (ver nota de segurança no topo do arquivo).
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-escola_musica} -d ${POSTGRES_DB:-escola_musica}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - escola-musica-net
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      WEBHOOK_URL: ${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-America/Sao_Paulo}
+      N8N_BASIC_AUTH_ACTIVE: "true"
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      # Credenciais usadas pelos workflows para chamar a API do backend
+      BACKEND_BASE_URL: http://backend:8080
+      N8N_SERVICE_TOKEN: ${N8N_SERVICE_TOKEN}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      STT_API_KEY: ${STT_API_KEY}
+      LLM_API_KEY: ${LLM_API_KEY}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ../n8n/workflows:/workflows:ro
+    ports:
+      # Publicado apenas em loopback: n8n não deve ser exposto publicamente sem autenticação
+      # adicional (proxy reverso, VPN, etc.) — ver nota de segurança no topo do arquivo.
+      - "127.0.0.1:5678:5678"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      # n8n expõe um endpoint de health dedicado (sem autenticacao) desde a v1: /healthz.
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - escola-musica-net
+
+networks:
+  escola-musica-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  n8n_data:
+  # Volume dedicado apenas aos PDFs gerados (relatórios de aula e semestrais).
+  # Nenhum volume de áudio bruto existe: por FR-005a, o áudio não é retido após a transcrição.
+  pdf_storage:

@@ -1,0 +1,229 @@
+{
+  "name": "VinculacaoTelegram",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"]
+      },
+      "id": "telegram-trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "webhookId": "vinculacao-telegram-webhook",
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credential",
+          "name": "Telegram Bot (Escola de Musica)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.BACKEND_BASE_URL }}/internal/v1/telegram/{{ $json.message.from.id }}/professor",
+        "method": "GET",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{ $env.N8N_SERVICE_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "consultar-vinculo",
+      "name": "Consultar vinculo existente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "ja-vinculado",
+      "name": "Ja vinculado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Bem-vindo(a) de volta, {{ $json.nomeProfessor }}! Sua conta ja esta vinculada."
+      },
+      "id": "confirmar-vinculo-existente",
+      "name": "Confirmar vinculo existente",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, -120],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credential",
+          "name": "Telegram Bot (Escola de Musica)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Ola! Para vincular sua conta, informe o codigo de vinculacao que voce recebeu do administrador da escola."
+      },
+      "id": "solicitar-codigo",
+      "name": "Solicitar codigo de vinculacao",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [660, 120],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credential",
+          "name": "Telegram Bot (Escola de Musica)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.BACKEND_BASE_URL }}/internal/v1/telegram/vinculacao",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"telegramUserId\": String($('Telegram Trigger').item.json.message.from.id), \"codigoVinculacao\": $json.message.text.trim() } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{ $env.N8N_SERVICE_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "enviar-codigo-vinculacao",
+      "name": "Enviar codigo de vinculacao",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "codigo-valido",
+      "name": "Codigo valido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1100, 120]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Conta vinculada com sucesso, {{ $json.nomeProfessor }}! Voce ja pode registrar aulas por aqui."
+      },
+      "id": "confirmar-vinculo-novo",
+      "name": "Confirmar vinculacao concluida",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1320, 0],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credential",
+          "name": "Telegram Bot (Escola de Musica)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.from.id }}",
+        "text": "Codigo invalido ou expirado. Peca ao administrador da escola para gerar um novo codigo e tente novamente."
+      },
+      "id": "informar-codigo-invalido",
+      "name": "Informar codigo invalido",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1320, 240],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credential",
+          "name": "Telegram Bot (Escola de Musica)"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [[{ "node": "Consultar vinculo existente", "type": "main", "index": 0 }]]
+    },
+    "Consultar vinculo existente": {
+      "main": [[{ "node": "Ja vinculado?", "type": "main", "index": 0 }]]
+    },
+    "Ja vinculado?": {
+      "main": [
+        [{ "node": "Confirmar vinculo existente", "type": "main", "index": 0 }],
+        [{ "node": "Solicitar codigo de vinculacao", "type": "main", "index": 0 }]
+      ]
+    },
+    "Solicitar codigo de vinculacao": {
+      "main": [[{ "node": "Enviar codigo de vinculacao", "type": "main", "index": 0 }]]
+    },
+    "Enviar codigo de vinculacao": {
+      "main": [[{ "node": "Codigo valido?", "type": "main", "index": 0 }]]
+    },
+    "Codigo valido?": {
+      "main": [
+        [{ "node": "Confirmar vinculacao concluida", "type": "main", "index": 0 }],
+        [{ "node": "Informar codigo invalido", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

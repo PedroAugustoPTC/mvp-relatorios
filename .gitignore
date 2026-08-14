@@ -1,0 +1,40 @@
+# Materiais de apoio e dados sensiveis (nao devem ser compartilhados no git)
+materiais_apoio/
+*.pdf
+
+# Variaveis de ambiente / segredos
+.env
+.env.local
+*.env
+infrastructure/.env
+!infrastructure/.env.example
+
+# Backend (Maven / Spring Boot)
+backend/target/
+
+# Frontend (Node / Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/*.local
+frontend/coverage/
+frontend/.env
+frontend/.env.local
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# IDE / OS
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Storage local (arquivos gerados/uploads)
+infrastructure/storage/*
+!infrastructure/storage/.gitkeep
