@@ -9,6 +9,9 @@ materiais_apoio/
 infrastructure/.env
 !infrastructure/.env.example
 
+# Scripts locais de setup/orquestracao (nao versionados)
+infra/
+
 # Backend (Maven / Spring Boot)
 backend/target/
 
