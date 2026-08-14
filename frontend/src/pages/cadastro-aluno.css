@@ -1,0 +1,22 @@
+/*
+ * Confirmacao do cadastro: avatar + nome, no mesmo formato do card de aluno do portal — e assim que
+ * o professor vera esse mesmo aluno na tela dele.
+ */
+
+/* Especificidade acima de `.adm-cartao` para o preenchimento nao depender da ordem do bundle. */
+.adm .adm-confirmacao {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 34rem;
+  margin-top: 24px;
+  padding: 20px 24px;
+}
+
+.adm-confirmacao h2 {
+  font-size: 1.05rem;
+}
+
+.adm-confirmacao p {
+  margin-top: 2px;
+}

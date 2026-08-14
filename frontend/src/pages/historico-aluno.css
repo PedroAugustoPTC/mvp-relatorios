@@ -1,0 +1,137 @@
+/*
+ * Consulta de historico: indice a esquerda, documento a direita — a mesma divisao de coluna estreita
+ * + conteudo que o portal usa no painel. Em tela estreita as duas colunas viram uma so, na mesma
+ * ordem de leitura (escolher o relatorio antes de ve-lo).
+ */
+
+.adm-historico__filtro {
+  max-width: 22rem;
+  margin-top: 24px;
+}
+
+.adm-historico {
+  display: grid;
+  gap: 20px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+@media (min-width: 900px) {
+  .adm-historico {
+    grid-template-columns: minmax(18rem, 24rem) 1fr;
+  }
+}
+
+.adm-historico__titulo {
+  margin-bottom: 12px;
+  font-size: 1.05rem;
+}
+
+/* Indice de relatorios — mesmos cartoes empilhados das listas laterais do portal. */
+
+.adm-indice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.adm-indice__item {
+  background-color: var(--adm-surface-elevada);
+  border: 1px solid var(--adm-borda);
+  border-radius: 14px;
+}
+
+.adm-indice__botao {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: inherit;
+  background-color: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.adm-indice__botao:hover {
+  background-color: var(--adm-surface-sutil);
+}
+
+.adm-indice__botao.ativo {
+  background-color: var(--adm-roxo-suave);
+}
+
+.adm-indice__item:has(.adm-indice__botao.ativo) {
+  border-color: var(--adm-roxo);
+}
+
+.adm-indice__rotulo {
+  min-width: 0;
+}
+
+.adm-indice__badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: var(--adm-raio-pill);
+  background-color: var(--adm-roxo-suave);
+  color: var(--adm-roxo);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Ficha do relatorio selecionado */
+
+/* Especificidade acima de `.adm-cartao` para o preenchimento nao depender da ordem do bundle. */
+.adm .adm-ficha {
+  padding: 24px;
+}
+
+.adm-ficha__dados {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.adm-ficha__par {
+  min-width: 8rem;
+}
+
+.adm-ficha__dados dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--adm-texto-tenue);
+}
+
+.adm-ficha__dados dd {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+/* Visualizador de PDF dentro da secretaria. */
+
+.adm .visualizador-pdf iframe {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--adm-borda);
+  border-radius: var(--adm-raio-campo);
+  background-color: var(--adm-surface);
+}
+
+.adm .visualizador-pdf__link {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--adm-roxo);
+  font-size: 0.88rem;
+  text-underline-offset: 3px;
+}

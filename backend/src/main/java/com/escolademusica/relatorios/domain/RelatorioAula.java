@@ -10,6 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Registro estruturado gerado a partir do audio de uma aula. */
 @Entity
@@ -33,15 +35,18 @@ public class RelatorioAula {
   @Column(name = "transcricao", columnDefinition = "text")
   private String transcricao;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "conteudos_trabalhados", columnDefinition = "jsonb")
   private String conteudosTrabalhados;
 
   @Column(name = "evolucao", columnDefinition = "text")
   private String evolucao;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "dificuldades", columnDefinition = "jsonb")
   private String dificuldades;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "atividades_propostas", columnDefinition = "jsonb")
   private String atividadesPropostas;
 
@@ -57,6 +62,15 @@ public class RelatorioAula {
 
   @Column(name = "pdf_url")
   private String pdfUrl;
+
+  /**
+   * Canal que originou o relatorio (spec 002, FR-002). O default {@code TELEGRAM} espelha o default
+   * da coluna na migracao V9 e preserva o comportamento do fluxo ja existente do bot; o portal web
+   * sobrescreve explicitamente com {@code WEB} no seu adaptador de entrada.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "canal_origem", nullable = false, length = 16)
+  private CanalOrigem canalOrigem = CanalOrigem.TELEGRAM;
 
   @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm;
@@ -93,6 +107,20 @@ public class RelatorioAula {
     }
     this.status = StatusRelatorioAula.APROVADO;
     this.aprovadoEm = momento;
+  }
+
+  /**
+   * Encerra definitivamente um relatorio que o professor decidiu nao concluir (spec 002). Um
+   * relatorio ja aprovado e um documento oficial entregue e nunca pode ser cancelado.
+   */
+  public void cancelar() {
+    if (this.status == StatusRelatorioAula.APROVADO) {
+      throw new IllegalStateException("Relatorio de aula ja aprovado nao pode ser cancelado");
+    }
+    if (this.status == StatusRelatorioAula.CANCELADO) {
+      throw new IllegalStateException("Relatorio de aula ja esta cancelado");
+    }
+    this.status = StatusRelatorioAula.CANCELADO;
   }
 
   public UUID getId() {
@@ -199,6 +227,14 @@ public class RelatorioAula {
     this.pdfUrl = pdfUrl;
   }
 
+  public CanalOrigem getCanalOrigem() {
+    return canalOrigem;
+  }
+
+  public void setCanalOrigem(CanalOrigem canalOrigem) {
+    this.canalOrigem = canalOrigem;
+  }
+
   public OffsetDateTime getCriadoEm() {
     return criadoEm;
   }
@@ -223,10 +259,11 @@ public class RelatorioAula {
     this.aprovadoEm = aprovadoEm;
   }
 
-  /** Status possiveis de um RelatorioAula (FR-021). */
+  /** Status possiveis de um RelatorioAula (FR-021, + CANCELADO na spec 002). */
   public enum StatusRelatorioAula {
     RASCUNHO,
     PENDENTE_REVISAO,
-    APROVADO
+    APROVADO,
+    CANCELADO
   }
 }

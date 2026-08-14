@@ -1,0 +1,45 @@
+/*
+ * Cards de aluno (T040) — mesma composicao dos cards "Ongoing Calls" da imagem de referencia:
+ * grade de cards arredondados, avatar + nome no topo, rodape discreto com identificador.
+ */
+
+.aluno-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+}
+
+.aluno-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aluno-card__topo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aluno-card__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aluno-card__acoes .portal-botao {
+  font-size: 0.85rem;
+  padding: 8px 14px;
+  text-decoration: none;
+}
+
+.aluno-card__rodape {
+  padding-top: 12px;
+  border-top: 1px solid var(--portal-borda);
+  color: var(--portal-texto-tenue);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}

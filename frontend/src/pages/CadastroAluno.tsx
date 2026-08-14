@@ -2,6 +2,17 @@ import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { ApiError } from '../services/apiClient';
 import { Aluno, cadastrarAluno, isMenorDeIdade } from '../services/alunoService';
 import { listarProfessores, ProfessorListaItem } from '../services/professorService';
+import './cadastro-aluno.css';
+
+/** Iniciais para o avatar da confirmacao, no mesmo formato dos avatares do portal. */
+function iniciais(nome: string): string {
+  return nome
+    .split(' ')
+    .filter((parte) => parte.length > 0)
+    .slice(0, 2)
+    .map((parte) => parte[0].toUpperCase())
+    .join('');
+}
 
 /** Cadastro de aluno pela interface administrativa (T070, FR-001/FR-001a). */
 function CadastroAluno(): JSX.Element {
@@ -64,12 +75,23 @@ function CadastroAluno(): JSX.Element {
   }
 
   return (
-    <main>
+    <section>
       <h1>Cadastrar aluno</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="nome">Nome</label>
+      <p>Escolha os professores que acompanham o aluno para que ele apareça no portal deles.</p>
+
+      <form className="adm-cartao adm-formulario adm-cadastro" onSubmit={handleSubmit}>
+        {erro && (
+          <p className="adm-alerta" role="alert">
+            {erro}
+          </p>
+        )}
+
+        <div className="adm-campo">
+          <label className="adm-rotulo" htmlFor="nome">
+            Nome
+          </label>
           <input
+            className="adm-entrada"
             id="nome"
             name="nome"
             type="text"
@@ -78,9 +100,12 @@ function CadastroAluno(): JSX.Element {
             onChange={(event) => setNome(event.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="dataNascimento">Data de nascimento</label>
+        <div className="adm-campo">
+          <label className="adm-rotulo" htmlFor="dataNascimento">
+            Data de nascimento
+          </label>
           <input
+            className="adm-entrada"
             id="dataNascimento"
             name="dataNascimento"
             type="date"
@@ -89,9 +114,12 @@ function CadastroAluno(): JSX.Element {
             onChange={(event) => setDataNascimento(event.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="cpf">CPF</label>
+        <div className="adm-campo">
+          <label className="adm-rotulo" htmlFor="cpf">
+            CPF
+          </label>
           <input
+            className="adm-entrada"
             id="cpf"
             name="cpf"
             type="text"
@@ -101,20 +129,27 @@ function CadastroAluno(): JSX.Element {
           />
         </div>
         {menorDeIdade && (
-          <div>
-            <label htmlFor="nomeResponsavel">Nome do responsavel</label>
+          <div className="adm-campo">
+            <label className="adm-rotulo" htmlFor="nomeResponsavel">
+              Nome do responsavel
+            </label>
             <input
+              className="adm-entrada"
               id="nomeResponsavel"
               name="nomeResponsavel"
               type="text"
               value={nomeResponsavel}
               onChange={(event) => setNomeResponsavel(event.target.value)}
             />
+            <p className="adm-ajuda">Obrigatório para alunos menores de 18 anos.</p>
           </div>
         )}
-        <div>
-          <label htmlFor="professorIds">Professores</label>
+        <div className="adm-campo">
+          <label className="adm-rotulo" htmlFor="professorIds">
+            Professores
+          </label>
           <select
+            className="adm-entrada"
             id="professorIds"
             name="professorIds"
             multiple
@@ -127,20 +162,25 @@ function CadastroAluno(): JSX.Element {
               </option>
             ))}
           </select>
+          <p className="adm-ajuda">Segure Ctrl (ou Cmd) para escolher mais de um professor.</p>
         </div>
-        {erro && <p role="alert">{erro}</p>}
-        <button type="submit" disabled={enviando}>
+        <button className="adm-botao" type="submit" disabled={enviando}>
           {enviando ? 'Cadastrando...' : 'Cadastrar'}
         </button>
       </form>
 
       {alunoCriado && (
-        <section aria-label="Aluno cadastrado">
-          <h2>Aluno cadastrado com sucesso</h2>
-          <p>{alunoCriado.nome}</p>
+        <section className="adm-cartao adm-confirmacao" aria-label="Aluno cadastrado">
+          <span className="adm-avatar" aria-hidden="true">
+            {iniciais(alunoCriado.nome)}
+          </span>
+          <div>
+            <h2>Aluno cadastrado com sucesso</h2>
+            <p>{alunoCriado.nome}</p>
+          </div>
         </section>
       )}
-    </main>
+    </section>
   );
 }
 

@@ -1,0 +1,34 @@
+/* Card de metrica (T075) — gradiente e tipografia do card de destaque da imagem de referencia. */
+
+.cartao-estatistica {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px;
+  border-radius: var(--portal-raio-card);
+  background-color: var(--portal-surface-elevada);
+  border: 1px solid var(--portal-borda);
+}
+
+.cartao-estatistica--destaque {
+  background: var(--portal-gradiente-destaque);
+  border-color: transparent;
+  color: #fff;
+}
+
+.cartao-estatistica__valor {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.cartao-estatistica__rotulo {
+  font-size: 0.85rem;
+  color: var(--portal-texto-suave);
+}
+
+/* Sobre o gradiente, o texto secundario precisa de branco translucido para manter contraste AA. */
+.cartao-estatistica--destaque .cartao-estatistica__rotulo {
+  color: rgba(255, 255, 255, 0.92);
+}

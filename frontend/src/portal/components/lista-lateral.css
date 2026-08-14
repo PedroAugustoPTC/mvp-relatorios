@@ -1,0 +1,59 @@
+/* Listas laterais (T075) — equivalentes a "Starting calls"/"Break" da imagem de referencia. */
+
+.lista-lateral h2 {
+  margin-bottom: 12px;
+}
+
+.lista-lateral__itens {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lista-lateral__item {
+  background-color: var(--portal-surface-elevada);
+  border: 1px solid var(--portal-borda);
+  border-radius: 14px;
+}
+
+.lista-lateral__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.lista-lateral__texto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lista-lateral__texto strong {
+  font-size: 0.92rem;
+}
+
+.lista-lateral__texto span {
+  font-size: 0.78rem;
+  color: var(--portal-texto-tenue);
+}
+
+.lista-lateral__badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: var(--portal-raio-pill);
+  background-color: var(--portal-roxo-suave);
+  color: var(--portal-roxo);
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lista-lateral__vazio {
+  font-size: 0.88rem;
+}

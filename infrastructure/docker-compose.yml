@@ -1,5 +1,3 @@
-version: "3.8"
-
 # Docker Compose para o MVP Sistema de Relatórios para Escola de Música.
 #
 # Serviços:
@@ -48,6 +46,12 @@ services:
       LLM_API_KEY: ${LLM_API_KEY}
       CPF_ENCRYPTION_KEY: ${CPF_ENCRYPTION_KEY}
       N8N_SERVICE_TOKEN: ${N8N_SERVICE_TOKEN}
+      # Portal web do professor (spec 002): origem do frontend autorizada a chamar /api/v1/**
+      # direto do navegador e parâmetros do rate limit do login por código de vinculação.
+      # Todos têm default no backend — declarados aqui para ficarem visíveis/ajustáveis.
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-http://localhost:8080}
+      WEB_LOGIN_MAX_ATTEMPTS: ${WEB_LOGIN_MAX_ATTEMPTS:-5}
+      WEB_LOGIN_LOCKOUT_MINUTES: ${WEB_LOGIN_LOCKOUT_MINUTES:-15}
       # Diretório de armazenamento de PDFs gerados (ver volume pdf_storage abaixo)
       PDF_STORAGE_PATH: /app/storage/pdfs
     volumes:

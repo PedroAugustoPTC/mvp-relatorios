@@ -22,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
@@ -69,12 +70,50 @@ public class SecurityConfig {
     return registration;
   }
 
+  /**
+   * Cadeia de filtros do portal do professor ({@code /api/v1/professor/**}, spec 002/T013).
+   *
+   * <p>Precisa vir ANTES de {@link #apiFilterChain} (que casa com {@code /api/v1/**}, um
+   * super-conjunto desta rota): o Spring Security usa a primeira cadeia cujo {@code
+   * securityMatcher} casa com a requisicao, entao inverter a ordem faria o portal cair na cadeia
+   * administrativa e recusar todo token de professor.
+   *
+   * <p>{@code /api/v1/professor/auth/vincular} e publico (e o proprio endpoint de autenticacao,
+   * protegido por rate limit em {@code RateLimiterAutenticacaoWebService} — FR-004a); as demais
+   * rotas exigem um JWT de professor valido.
+   */
+  @Bean
+  @Order(0)
+  public SecurityFilterChain professorPortalFilterChain(
+      HttpSecurity http, JwtService jwtService, CorsConfigurationSource corsConfigurationSource)
+      throws Exception {
+    http.securityMatcher("/api/v1/professor/**")
+        .cors(cors -> cors.configurationSource(corsConfigurationSource))
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .addFilterBefore(
+            new ProfessorJwtAuthenticationFilter(jwtService),
+            org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+                .class)
+        .authorizeHttpRequests(
+            auth ->
+                auth.requestMatchers("/api/v1/professor/auth/vincular")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated())
+        .exceptionHandling(
+            eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+    return http.build();
+  }
+
   /** Cadeia de filtros para a interface administrativa web ({@code /api/v1/**}). */
   @Bean
   @Order(1)
-  public SecurityFilterChain apiFilterChain(HttpSecurity http, JwtService jwtService)
+  public SecurityFilterChain apiFilterChain(
+      HttpSecurity http, JwtService jwtService, CorsConfigurationSource corsConfigurationSource)
       throws Exception {
     http.securityMatcher("/api/v1/**")
+        .cors(cors -> cors.configurationSource(corsConfigurationSource))
         .csrf(csrf -> csrf.disable())
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(

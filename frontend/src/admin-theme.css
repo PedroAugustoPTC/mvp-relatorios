@@ -1,0 +1,410 @@
+@import './theme/tokens.css';
+
+/*
+ * Identidade visual da secretaria (spec 001).
+ *
+ * A secretaria usa a mesma identidade do portal do professor (spec 002): fundo quase preto, painel
+ * arredondado, trilha estreita de icones a esquerda, header no topo do conteudo e roxo como unico
+ * destaque. E o mesmo sistema visto de dois lados — quando o professor liga para a secretaria
+ * descrevendo o que ve na tela dele, quem atende reconhece os mesmos elementos na sua.
+ *
+ * As cores vem de `src/theme/tokens.css`, fonte unica compartilhada com o portal. Aqui elas ganham
+ * o prefixo `--adm-*` e os elementos base da secretaria.
+ *
+ * Escopo: apenas a arvore `.adm`. O portal nao herda nada por acidente.
+ */
+
+.adm {
+  /* Superficies */
+  --adm-bg: var(--app-bg);
+  --adm-surface: var(--app-surface);
+  --adm-surface-elevada: var(--app-surface-elevada);
+  --adm-surface-sutil: var(--app-surface-sutil);
+  --adm-borda: var(--app-borda);
+
+  /* Texto */
+  --adm-texto: var(--app-texto);
+  --adm-texto-suave: var(--app-texto-suave);
+  --adm-texto-tenue: var(--app-texto-tenue);
+
+  /* Destaque */
+  --adm-roxo: var(--app-roxo);
+  --adm-roxo-forte: var(--app-roxo-forte);
+  --adm-roxo-suave: var(--app-roxo-suave);
+
+  /* Estados */
+  --adm-sucesso: var(--app-sucesso);
+  --adm-erro: var(--app-erro);
+  --adm-erro-fundo: var(--app-erro-fundo);
+
+  /* Forma e ritmo */
+  --adm-raio-card: var(--app-raio-card);
+  --adm-raio-pill: var(--app-raio-pill);
+  --adm-raio-campo: var(--app-raio-campo);
+  --adm-espaco: var(--app-espaco);
+  --adm-sombra-card: var(--app-sombra-card);
+
+  font-family: var(--app-fonte);
+  color: var(--adm-texto);
+  background-color: var(--adm-bg);
+  min-height: 100vh;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tipografia
+ * ------------------------------------------------------------------------- */
+
+.adm h1,
+.adm h2,
+.adm h3 {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.adm h1 {
+  font-size: 1.75rem;
+}
+
+.adm h2 {
+  font-size: 1.5rem;
+}
+
+.adm h3 {
+  font-size: 1.05rem;
+}
+
+.adm p {
+  margin: 0;
+  color: var(--adm-texto-suave);
+}
+
+/* ---------------------------------------------------------------------------
+ * Shell: painel arredondado, trilha de icones e header
+ * ------------------------------------------------------------------------- */
+
+.adm-shell {
+  display: flex;
+  margin: 0 auto;
+  max-width: 1440px;
+  min-height: 100vh;
+  background-color: var(--adm-surface);
+  border-radius: var(--app-raio-painel);
+  overflow: hidden;
+}
+
+.adm-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 12px;
+  width: 72px;
+  flex-shrink: 0;
+  background-color: var(--adm-surface-elevada);
+}
+
+.adm-sidebar__itens {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.adm-sidebar__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background-color: transparent;
+  color: var(--adm-texto-suave);
+  font-size: 1.15rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.adm-sidebar__item:hover {
+  background-color: var(--adm-surface-sutil);
+  color: var(--adm-texto);
+}
+
+.adm-sidebar__item.ativo {
+  background-color: var(--adm-roxo);
+  color: #fff;
+}
+
+.adm-conteudo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--adm-borda);
+}
+
+.adm-header__marca {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.adm-header__usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.adm-header__usuario-dados {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.adm-header__usuario-dados strong {
+  font-size: 0.9rem;
+}
+
+.adm-header__usuario-dados span {
+  font-size: 0.78rem;
+  color: var(--adm-texto-tenue);
+}
+
+.adm-main {
+  flex: 1;
+  padding: 28px;
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Cartao, formulario e campos
+ * ------------------------------------------------------------------------- */
+
+.adm-cartao {
+  background-color: var(--adm-surface-elevada);
+  border: 1px solid var(--adm-borda);
+  border-radius: var(--adm-raio-card);
+  padding: var(--adm-espaco);
+  box-shadow: var(--adm-sombra-card);
+}
+
+/* Formularios da secretaria: coluna unica, larga o bastante para nome completo e e-mail. */
+.adm-formulario {
+  max-width: 34rem;
+  padding: 24px;
+}
+
+.adm-campo {
+  margin-bottom: 18px;
+}
+
+.adm-campo:last-of-type {
+  margin-bottom: 24px;
+}
+
+.adm-rotulo {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--adm-texto-suave);
+}
+
+.adm-entrada {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: var(--adm-raio-campo);
+  border: 1px solid var(--adm-borda);
+  background-color: var(--adm-surface);
+  color: var(--adm-texto);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.adm-entrada::placeholder {
+  color: var(--adm-texto-tenue);
+}
+
+.adm-entrada:hover {
+  border-color: #3a3a46;
+}
+
+.adm-entrada:focus {
+  border-color: var(--adm-roxo);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--adm-roxo-suave);
+}
+
+select.adm-entrada[multiple] {
+  min-height: 9rem;
+  padding: 8px;
+}
+
+select.adm-entrada[multiple] option {
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+
+.adm-ajuda {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  color: var(--adm-texto-tenue);
+}
+
+/* ---------------------------------------------------------------------------
+ * Botoes
+ * ------------------------------------------------------------------------- */
+
+.adm-botao {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--adm-raio-campo);
+  border: 1px solid transparent;
+  background-color: var(--adm-roxo);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.adm-botao:hover:not(:disabled) {
+  background-color: var(--adm-roxo-forte);
+}
+
+.adm-botao:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.adm-botao--secundario {
+  background-color: transparent;
+  border-color: var(--adm-borda);
+  color: var(--adm-texto);
+}
+
+.adm-botao--secundario:hover:not(:disabled) {
+  background-color: var(--adm-surface-sutil);
+}
+
+/* ---------------------------------------------------------------------------
+ * Avatar, etiquetas e mensagens
+ * ------------------------------------------------------------------------- */
+
+.adm-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--adm-roxo-suave);
+  color: var(--adm-roxo);
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.adm-etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--adm-raio-pill);
+  background-color: var(--adm-surface-sutil);
+  border: 1px solid var(--adm-borda);
+  color: var(--adm-texto-suave);
+  font-size: 0.85rem;
+}
+
+.adm-alerta {
+  margin: 0 0 18px;
+  padding: 11px 14px;
+  border: 1px solid var(--adm-erro);
+  border-radius: var(--adm-raio-campo);
+  background-color: var(--adm-erro-fundo);
+  color: var(--adm-erro);
+  font-size: 0.9rem;
+}
+
+.adm-vazio {
+  margin-top: 24px;
+  max-width: 46ch;
+}
+
+/* ---------------------------------------------------------------------------
+ * Acessibilidade
+ * ------------------------------------------------------------------------- */
+
+.adm :focus-visible {
+  outline: 2px solid var(--adm-roxo);
+  outline-offset: 2px;
+}
+
+.adm-visualmente-oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * Telas estreitas — mesma dobra do portal: a trilha vira barra horizontal no topo
+ * ------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .adm-shell {
+    flex-direction: column;
+    border-radius: 0;
+  }
+
+  .adm-sidebar {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: auto;
+    padding: 10px 14px;
+  }
+
+  .adm-sidebar__itens {
+    flex-direction: row;
+  }
+
+  .adm-sidebar__sair {
+    margin-left: auto;
+  }
+
+  .adm-header {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .adm-main {
+    padding: 16px;
+  }
+
+  .adm-formulario {
+    padding: 18px;
+  }
+}

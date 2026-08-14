@@ -1,7 +1,10 @@
 package com.escolademusica.relatorios.repository;
 
 import com.escolademusica.relatorios.domain.RelatorioSemestral;
+import com.escolademusica.relatorios.domain.RelatorioSemestral.StatusRelatorioSemestral;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +17,11 @@ public interface RelatorioSemestralRepository extends JpaRepository<RelatorioSem
 
   /** Historico por aluno (FR-017), ordenado cronologicamente por periodo. */
   List<RelatorioSemestral> findByAlunoIdOrderByPeriodoInicioAsc(UUID alunoId);
+
+  /**
+   * Pendencia semestral mais recente de um par professor+aluno, independentemente do canal de
+   * origem (spec 002, FR-022a).
+   */
+  Optional<RelatorioSemestral> findFirstByProfessorIdAndAlunoIdAndStatusInOrderByAtualizadoEmDesc(
+      UUID professorId, UUID alunoId, Collection<StatusRelatorioSemestral> status);
 }

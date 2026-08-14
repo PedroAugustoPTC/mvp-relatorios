@@ -1,0 +1,50 @@
+/*
+ * Porta de entrada da secretaria: cartao centralizado sobre o fundo escuro, igual a tela de entrada
+ * do portal do professor. Quem administra a escola e quem da aula chegam pela mesma fachada.
+ */
+
+.adm-portao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.adm-portao__cartao {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px;
+}
+
+.adm-portao__area {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--adm-roxo);
+}
+
+.adm-portao__marca {
+  margin-top: 6px;
+  font-size: 1.6rem;
+}
+
+.adm-portao__subtitulo {
+  margin: 8px 0 24px;
+  font-size: 0.9rem;
+}
+
+.adm-portao__botao {
+  width: 100%;
+}
+
+.adm-portao__desvio {
+  margin-top: 20px;
+  font-size: 0.88rem;
+}
+
+.adm-portao__desvio a {
+  color: var(--adm-roxo);
+  text-underline-offset: 3px;
+}

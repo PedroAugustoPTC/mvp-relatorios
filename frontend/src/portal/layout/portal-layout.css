@@ -1,0 +1,169 @@
+/*
+ * Layout do shell do portal (T019) — estrutura da imagem de referencia (research.md secao 7):
+ * painel externo arredondado, sidebar de icones a esquerda, header no topo do conteudo.
+ */
+
+.portal-shell {
+  display: flex;
+  gap: 0;
+  margin: 0 auto;
+  max-width: 1440px;
+  min-height: 100vh;
+  background-color: var(--portal-surface);
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------------------------
+ * Sidebar de icones
+ * ------------------------------------------------------------------------ */
+
+.portal-sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 12px;
+  width: 72px;
+  flex-shrink: 0;
+  background-color: var(--portal-surface-elevada);
+}
+
+.portal-sidebar__itens {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-sidebar__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background-color: transparent;
+  color: var(--portal-texto-suave);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.portal-sidebar__item:hover {
+  background-color: var(--portal-surface-sutil);
+  color: var(--portal-texto);
+}
+
+.portal-sidebar__item.ativo {
+  background-color: var(--portal-roxo);
+  color: #fff;
+}
+
+/* --------------------------------------------------------------------------
+ * Conteudo e header
+ * ------------------------------------------------------------------------ */
+
+.portal-conteudo {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--portal-borda);
+}
+
+.portal-header__marca {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.portal-header__busca {
+  flex: 1;
+  max-width: 420px;
+}
+
+.portal-header__busca-campo {
+  border-radius: var(--portal-raio-pill);
+  padding: 9px 18px;
+}
+
+.portal-header__usuario {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.portal-header__usuario-dados {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.portal-header__usuario-dados strong {
+  font-size: 0.9rem;
+}
+
+.portal-header__usuario-dados span {
+  font-size: 0.78rem;
+  color: var(--portal-texto-tenue);
+}
+
+.portal-main {
+  flex: 1;
+  padding: 28px;
+  min-width: 0;
+}
+
+/* --------------------------------------------------------------------------
+ * Responsivo: sidebar vira barra horizontal no topo
+ * ------------------------------------------------------------------------ */
+
+@media (max-width: 720px) {
+  .portal-shell {
+    flex-direction: column;
+    border-radius: 0;
+  }
+
+  .portal-sidebar {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: auto;
+    padding: 10px 14px;
+  }
+
+  .portal-sidebar__itens {
+    flex-direction: row;
+  }
+
+  .portal-sidebar__sair {
+    margin-left: auto;
+  }
+
+  .portal-header {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+
+  .portal-header__busca {
+    order: 3;
+    max-width: none;
+    width: 100%;
+  }
+
+  .portal-main {
+    padding: 16px;
+  }
+}

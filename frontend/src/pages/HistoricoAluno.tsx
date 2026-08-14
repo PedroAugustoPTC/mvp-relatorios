@@ -3,6 +3,7 @@ import PdfViewer from '../components/PdfViewer';
 import { ApiError } from '../services/apiClient';
 import { Aluno, listarAlunos } from '../services/alunoService';
 import { consultarHistorico, HistoricoAluno as HistoricoAlunoDto, ItemHistorico } from '../services/historicoService';
+import './historico-aluno.css';
 
 function rotuloItem(item: ItemHistorico): string {
   if (item.tipo === 'AULA') {
@@ -53,11 +54,21 @@ function HistoricoAluno(): JSX.Element {
   }
 
   return (
-    <main>
+    <section>
       <h1>Historico do aluno</h1>
-      <div>
-        <label htmlFor="alunoId">Aluno</label>
-        <select id="alunoId" name="alunoId" value={alunoId} onChange={handleAlunoChange}>
+      <p>Escolha um aluno para ver os relatórios já aprovados.</p>
+
+      <div className="adm-campo adm-historico__filtro">
+        <label className="adm-rotulo" htmlFor="alunoId">
+          Aluno
+        </label>
+        <select
+          className="adm-entrada"
+          id="alunoId"
+          name="alunoId"
+          value={alunoId}
+          onChange={handleAlunoChange}
+        >
           <option value="">Selecione um aluno</option>
           {alunos.map((aluno) => (
             <option key={aluno.id} value={aluno.id}>
@@ -67,44 +78,78 @@ function HistoricoAluno(): JSX.Element {
         </select>
       </div>
 
-      {carregando && <p>Carregando historico...</p>}
-      {erro && <p role="alert">{erro}</p>}
+      {carregando && (
+        <p role="status" aria-live="polite">
+          Carregando historico...
+        </p>
+      )}
+      {erro && (
+        <p className="adm-alerta" role="alert">
+          {erro}
+        </p>
+      )}
 
       {historico && (
-        <section aria-label="Lista de relatorios">
-          <h2>Relatorios de {historico.aluno.nome}</h2>
-          {historico.relatorios.length === 0 ? (
-            <p>Nenhum relatorio aprovado encontrado para este aluno.</p>
-          ) : (
-            <ul>
-              {historico.relatorios.map((item) => (
-                <li key={`${item.tipo}-${item.id}`}>
-                  <button type="button" onClick={() => setItemSelecionado(item)}>
-                    {rotuloItem(item)}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+        <div className="adm-historico">
+          <section aria-label="Lista de relatorios">
+            <h2 className="adm-historico__titulo">Relatorios de {historico.aluno.nome}</h2>
+            {historico.relatorios.length === 0 ? (
+              <p className="adm-vazio">Nenhum relatorio aprovado encontrado para este aluno.</p>
+            ) : (
+              <ul className="adm-indice">
+                {historico.relatorios.map((item) => {
+                  const selecionado = itemSelecionado?.id === item.id;
+                  return (
+                    <li key={`${item.tipo}-${item.id}`} className="adm-indice__item">
+                      <button
+                        type="button"
+                        className={`adm-indice__botao${selecionado ? ' ativo' : ''}`}
+                        aria-current={selecionado}
+                        onClick={() => setItemSelecionado(item)}
+                      >
+                        <span className="adm-indice__rotulo">{rotuloItem(item)}</span>
+                        <span className="adm-indice__badge">{item.status}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
 
-      {itemSelecionado && (
-        <section aria-label="Detalhe do relatorio">
-          <h2>Detalhe</h2>
-          <p>Tipo: {itemSelecionado.tipo}</p>
-          <p>Status: {itemSelecionado.status}</p>
-          {itemSelecionado.aprovadoEm && (
-            <p>Aprovado em: {new Date(itemSelecionado.aprovadoEm).toLocaleString('pt-BR')}</p>
-          )}
-          {itemSelecionado.pdfUrl ? (
-            <PdfViewer pdfUrl={itemSelecionado.pdfUrl} titulo="Abrir PDF do relatorio" />
+          {itemSelecionado ? (
+            <section className="adm-cartao adm-ficha" aria-label="Detalhe do relatorio">
+              <h2 className="adm-historico__titulo">Detalhe</h2>
+              <dl className="adm-ficha__dados">
+                <div className="adm-ficha__par">
+                  <dt>Tipo</dt>
+                  <dd>{itemSelecionado.tipo}</dd>
+                </div>
+                <div className="adm-ficha__par">
+                  <dt>Status</dt>
+                  <dd>{itemSelecionado.status}</dd>
+                </div>
+                {itemSelecionado.aprovadoEm && (
+                  <div className="adm-ficha__par">
+                    <dt>Aprovado em</dt>
+                    <dd>{new Date(itemSelecionado.aprovadoEm).toLocaleString('pt-BR')}</dd>
+                  </div>
+                )}
+              </dl>
+              {itemSelecionado.pdfUrl ? (
+                <PdfViewer pdfUrl={itemSelecionado.pdfUrl} titulo="Abrir PDF do relatorio" />
+              ) : (
+                <p>PDF nao disponivel.</p>
+              )}
+            </section>
           ) : (
-            <p>PDF nao disponivel.</p>
+            historico.relatorios.length > 0 && (
+              <p className="adm-vazio">Escolha um relatório da lista para abrir o PDF.</p>
+            )
           )}
-        </section>
+        </div>
       )}
-    </main>
+    </section>
   );
 }
 

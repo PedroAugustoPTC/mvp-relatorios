@@ -1,0 +1,11 @@
+/*
+ * Seletor de semestre (T071) — mesma linguagem visual das pills numeradas da secao "Statistics" da
+ * imagem de referencia, adaptadas de dias do mes para semestres do aluno.
+ */
+
+.semestre-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}

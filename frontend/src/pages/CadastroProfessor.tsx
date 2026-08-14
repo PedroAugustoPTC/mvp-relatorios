@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { ApiError } from '../services/apiClient';
 import { cadastrarProfessor, Professor } from '../services/professorService';
+import './cadastro-professor.css';
 
 /** Cadastro de professor pela interface administrativa (T069, FR-001/FR-002). */
 function CadastroProfessor(): JSX.Element {
@@ -31,12 +32,23 @@ function CadastroProfessor(): JSX.Element {
   }
 
   return (
-    <main>
+    <section>
       <h1>Cadastrar professor</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="nome">Nome</label>
+      <p>O código de vinculação aparece aqui assim que o professor for cadastrado.</p>
+
+      <form className="adm-cartao adm-formulario adm-cadastro" onSubmit={handleSubmit}>
+        {erro && (
+          <p className="adm-alerta" role="alert">
+            {erro}
+          </p>
+        )}
+
+        <div className="adm-campo">
+          <label className="adm-rotulo" htmlFor="nome">
+            Nome
+          </label>
           <input
+            className="adm-entrada"
             id="nome"
             name="nome"
             type="text"
@@ -45,9 +57,12 @@ function CadastroProfessor(): JSX.Element {
             onChange={(event) => setNome(event.target.value)}
           />
         </div>
-        <div>
-          <label htmlFor="email">E-mail</label>
+        <div className="adm-campo">
+          <label className="adm-rotulo" htmlFor="email">
+            E-mail
+          </label>
           <input
+            className="adm-entrada"
             id="email"
             name="email"
             type="email"
@@ -56,28 +71,25 @@ function CadastroProfessor(): JSX.Element {
             onChange={(event) => setEmail(event.target.value)}
           />
         </div>
-        {erro && <p role="alert">{erro}</p>}
-        <button type="submit" disabled={enviando}>
+        <button className="adm-botao" type="submit" disabled={enviando}>
           {enviando ? 'Cadastrando...' : 'Cadastrar'}
         </button>
       </form>
 
       {professorCriado && (
-        <section aria-label="Codigo de vinculacao gerado">
+        <section className="adm-entrega" aria-label="Codigo de vinculacao gerado">
           <h2>Professor cadastrado com sucesso</h2>
-          <p>
-            Codigo de vinculacao: <strong>{professorCriado.codigoVinculacao}</strong>
+          <p className="adm-entrega__rotulo">Código de vinculação</p>
+          <p className="adm-entrega__codigo">{professorCriado.codigoVinculacao}</p>
+          <p className="adm-entrega__validade">
+            Válido até {new Date(professorCriado.codigoVinculacaoExpiraEm).toLocaleString('pt-BR')}
           </p>
-          <p>
-            Valido ate:{' '}
-            {new Date(professorCriado.codigoVinculacaoExpiraEm).toLocaleString('pt-BR')}
-          </p>
-          <p>
-            Repasse este codigo ao professor para que ele vincule sua conta do Telegram pelo bot.
+          <p className="adm-entrega__instrucao">
+            Repasse este código ao professor para que ele vincule sua conta do Telegram pelo bot.
           </p>
         </section>
       )}
-    </main>
+    </section>
   );
 }
 

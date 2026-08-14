@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /** Consolidacao de multiplos relatorios de aula de um aluno em um periodo (semestre). */
 @Entity
@@ -37,30 +39,39 @@ public class RelatorioSemestral {
   @Column(name = "quantidade_relatorios_aula_considerados", nullable = false)
   private int quantidadeRelatoriosAulaConsiderados;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "informacoes_gerais", columnDefinition = "jsonb")
   private String informacoesGerais;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "frequencia_e_estudo", columnDefinition = "jsonb")
   private String frequenciaEEstudo;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "tecnica", columnDefinition = "jsonb")
   private String tecnica;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "musicalidade", columnDefinition = "jsonb")
   private String musicalidade;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "leitura_e_memorizacao", columnDefinition = "jsonb")
   private String leituraEMemorizacao;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "pontos_de_atencao", columnDefinition = "jsonb")
   private String pontosDeAtencao;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "estrategias_pedagogicas", columnDefinition = "jsonb")
   private String estrategiasPedagogicas;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "acompanhamento_familiar", columnDefinition = "jsonb")
   private String acompanhamentoFamiliar;
 
+  @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "planejamento_proximo_semestre", columnDefinition = "jsonb")
   private String planejamentoProximoSemestre;
 
@@ -76,6 +87,15 @@ public class RelatorioSemestral {
 
   @Column(name = "pdf_url")
   private String pdfUrl;
+
+  /**
+   * Canal que originou o relatorio (spec 002, FR-002). O default {@code TELEGRAM} espelha o default
+   * da coluna na migracao V9 e preserva o comportamento do fluxo ja existente do bot; o portal web
+   * sobrescreve explicitamente com {@code WEB} no seu adaptador de entrada.
+   */
+  @Enumerated(EnumType.STRING)
+  @Column(name = "canal_origem", nullable = false, length = 16)
+  private CanalOrigem canalOrigem = CanalOrigem.TELEGRAM;
 
   @Column(name = "criado_em", nullable = false)
   private OffsetDateTime criadoEm;
@@ -101,6 +121,20 @@ public class RelatorioSemestral {
     }
     this.status = StatusRelatorioSemestral.APROVADO;
     this.aprovadoEm = momento;
+  }
+
+  /**
+   * Encerra definitivamente um relatorio semestral que o professor decidiu nao concluir (spec 002).
+   * Um relatorio ja aprovado e um documento oficial entregue e nunca pode ser cancelado.
+   */
+  public void cancelar() {
+    if (this.status == StatusRelatorioSemestral.APROVADO) {
+      throw new IllegalStateException("Relatorio semestral ja aprovado nao pode ser cancelado");
+    }
+    if (this.status == StatusRelatorioSemestral.CANCELADO) {
+      throw new IllegalStateException("Relatorio semestral ja esta cancelado");
+    }
+    this.status = StatusRelatorioSemestral.CANCELADO;
   }
 
   public UUID getId() {
@@ -255,6 +289,14 @@ public class RelatorioSemestral {
     this.pdfUrl = pdfUrl;
   }
 
+  public CanalOrigem getCanalOrigem() {
+    return canalOrigem;
+  }
+
+  public void setCanalOrigem(CanalOrigem canalOrigem) {
+    this.canalOrigem = canalOrigem;
+  }
+
   public OffsetDateTime getCriadoEm() {
     return criadoEm;
   }
@@ -279,9 +321,10 @@ public class RelatorioSemestral {
     this.aprovadoEm = aprovadoEm;
   }
 
-  /** Status possiveis de um RelatorioSemestral (FR-021). */
+  /** Status possiveis de um RelatorioSemestral (FR-021, + CANCELADO na spec 002). */
   public enum StatusRelatorioSemestral {
     PENDENTE_REVISAO,
-    APROVADO
+    APROVADO,
+    CANCELADO
   }
 }
