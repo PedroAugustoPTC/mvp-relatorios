@@ -49,7 +49,7 @@ function VincularCodigo(): JSX.Element {
     setEnviando(true);
     try {
       const resposta = await vincularPorCodigo(codigo.trim());
-      autenticar(resposta.token);
+      await autenticar(resposta.token);
       navigate('/portal', { replace: true });
     } catch (e) {
       setErro(mensagemDeErro(e));

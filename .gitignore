@@ -9,9 +9,6 @@ materiais_apoio/
 infrastructure/.env
 !infrastructure/.env.example
 
-# Scripts locais de setup/orquestracao (nao versionados)
-infra/
-
 # Backend (Maven / Spring Boot)
 backend/target/
 
@@ -47,5 +44,3 @@ Thumbs.db
 npm-debug.log*
 
 # Storage local (arquivos gerados/uploads)
-infrastructure/storage/*
-!infrastructure/storage/.gitkeep

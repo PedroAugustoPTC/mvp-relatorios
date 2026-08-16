@@ -71,6 +71,43 @@ public class SecurityConfig {
   }
 
   /**
+   * Cadeia de filtros do download de PDFs ({@code /api/v1/arquivos/**}, ver {@code
+   * ArquivoRelatorioController}).
+   *
+   * <p>E a unica rota alcancada pelas DUAS interfaces: a secretaria abre o PDF pelo historico do
+   * aluno (JWT de administrador) e o professor o confere no portal (JWT de professor). Por isso
+   * aceita qualquer um dos dois tokens, em vez de reaproveitar as cadeias existentes — que sao
+   * mutuamente exclusivas.
+   *
+   * <p>Precisa vir ANTES das cadeias de {@code /api/v1/professor/**} e {@code /api/v1/**}: o Spring
+   * Security usa a primeira cadeia cujo {@code securityMatcher} casa com a requisicao.
+   */
+  @Bean
+  @Order(-1)
+  public SecurityFilterChain arquivosFilterChain(
+      HttpSecurity http, JwtService jwtService, CorsConfigurationSource corsConfigurationSource)
+      throws Exception {
+    http.securityMatcher("/api/v1/arquivos/**")
+        .cors(cors -> cors.configurationSource(corsConfigurationSource))
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        // O filtro do professor vem primeiro porque tambem renova o token da sessao deslizante
+        // (FR-005); o de administrador so age se aquele nao tiver autenticado a requisicao.
+        .addFilterBefore(
+            new ProfessorJwtAuthenticationFilter(jwtService),
+            org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+                .class)
+        .addFilterBefore(
+            new AdminJwtSeNaoAutenticadoFilter(jwtService),
+            org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+                .class)
+        .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+        .exceptionHandling(
+            eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
+    return http.build();
+  }
+
+  /**
    * Cadeia de filtros do portal do professor ({@code /api/v1/professor/**}, spec 002/T013).
    *
    * <p>Precisa vir ANTES de {@link #apiFilterChain} (que casa com {@code /api/v1/**}, um
@@ -204,6 +241,31 @@ public class SecurityConfig {
             });
       }
       filterChain.doFilter(request, response);
+    }
+  }
+
+  /**
+   * Variante do {@link JwtAuthenticationFilter} usada na cadeia de {@code /api/v1/arquivos/**}: so
+   * tenta autenticar como administrador se a requisicao ainda nao tiver sido autenticada pelo
+   * filtro do professor. Sem essa guarda, um token de professor valido — cujo subject tambem e
+   * aceito por {@code validarEExtrairSubject} — teria a autenticacao sobrescrita por uma {@code
+   * ROLE_ADMIN} que ele nao possui.
+   */
+  static class AdminJwtSeNaoAutenticadoFilter extends JwtAuthenticationFilter {
+
+    AdminJwtSeNaoAutenticadoFilter(JwtService jwtService) {
+      super(jwtService);
+    }
+
+    @Override
+    protected void doFilterInternal(
+        HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+        throws ServletException, IOException {
+      if (SecurityContextHolder.getContext().getAuthentication() != null) {
+        filterChain.doFilter(request, response);
+        return;
+      }
+      super.doFilterInternal(request, response, filterChain);
     }
   }
 }

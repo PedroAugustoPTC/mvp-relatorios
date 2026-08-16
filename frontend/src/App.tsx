@@ -37,8 +37,9 @@ function App(): JSX.Element {
           <Route path="/professores/novo" element={<CadastroProfessor />} />
           <Route path="/alunos/novo" element={<CadastroAluno />} />
           <Route path="/historico" element={<HistoricoAluno />} />
-          <Route path="/" element={<Navigate to="/historico" replace />} />
         </Route>
+
+        <Route path="/" element={<Navigate to="/portal" replace />} />
 
         {/* Portal do professor (spec 002) */}
         <Route

@@ -35,6 +35,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class PdfGeracaoService {
 
+  /**
+   * Prefixo da URL HTTP sob a qual os PDFs gravados no storage sao servidos (ver {@code
+   * ArquivoRelatorioController}). O {@code pdfUrl} persistido no relatorio precisa ser uma URL que
+   * o navegador consiga buscar — nao o caminho de filesystem do container, que resolveria contra a
+   * origem do frontend e cairia no fallback SPA do Nginx (devolvendo o index.html no lugar do PDF).
+   */
+  public static final String URL_BASE_PDF = "/api/v1/arquivos/relatorios";
+
   private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
   private final Path storageBasePath;
@@ -85,7 +93,7 @@ public class PdfGeracaoService {
       Files.createDirectories(storageBasePath);
       Path caminhoArquivo = storageBasePath.resolve(nomeArquivo);
       Files.write(caminhoArquivo, bytesPdf);
-      return caminhoArquivo.toString();
+      return URL_BASE_PDF + "/" + nomeArquivo;
     } catch (IOException e) {
       throw new UncheckedIOException("Falha ao gravar PDF no storage: " + nomeArquivo, e);
     }
