@@ -1,0 +1,652 @@
+{
+  "info": {
+    "name": "Escola de Música - Relatórios (API completa)",
+    "_postman_id": "b7f1a6b2-8e4c-4c3a-9b1a-3f9c2e5a0d10",
+    "description": "Collection completa da API local (backend Spring Boot). Base URL via proxy nginx do frontend: http://localhost:8080. Ver infra/TESTE-LOCAL.md para o passo a passo de subir a stack e infra/seed-dev.sql para os dados de teste (admin@escola.local/admin123, professor com codigo DEV-12345678).\n\nDois esquemas de autenticação:\n- Authorization: Bearer <token> para tudo em /api/v1/** (admin ou professor, tokens diferentes)\n- X-N8N-Service-Token: <token> para tudo em /internal/v1/** (chamado pelo n8n)\n\nOs requests de login (Admin Login e Professor - Vincular) têm um script de teste que salva o token automaticamente nas variáveis de collection admin_token / professor_token, então basta rodá-los antes dos demais.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8080", "description": "Frontend/nginx proxy. Alternativa direta ao backend: http://127.0.0.1:8081" },
+    { "key": "admin_email", "value": "admin@escola.local" },
+    { "key": "admin_senha", "value": "admin123" },
+    { "key": "codigo_vinculacao", "value": "DEV-12345678", "description": "Código do professor de teste criado por infra/seed-dev.sql (validade 7 dias)" },
+    { "key": "admin_token", "value": "" },
+    { "key": "professor_token", "value": "" },
+    { "key": "n8n_service_token", "value": "", "description": "Valor de N8N_SERVICE_TOKEN em infrastructure/.env" },
+    { "key": "professor_id", "value": "" },
+    { "key": "aluno_id", "value": "" },
+    { "key": "relatorio_aula_id", "value": "" },
+    { "key": "relatorio_semestral_id", "value": "" },
+    { "key": "telegram_user_id", "value": "123456789" },
+    { "key": "semestre", "value": "2026-1", "description": "Formato AAAA-S" },
+    { "key": "periodo_chave", "value": "2026-1" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Admin - Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('admin_token', body.token);",
+                  "  console.log('admin_token salvo');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"senha\": \"{{admin_senha}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/auth/login", "host": ["{{base_url}}"], "path": ["api", "v1", "auth", "login"] },
+            "description": "Público. Retorna { token, expiraEm }. Token válido por 2h."
+          }
+        },
+        {
+          "name": "Professor - Vincular (login portal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  pm.collectionVariables.set('professor_token', body.token);",
+                  "  if (body.professor && body.professor.id) {",
+                  "    pm.collectionVariables.set('professor_id', body.professor.id);",
+                  "  }",
+                  "  console.log('professor_token salvo');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"codigoVinculacao\": \"{{codigo_vinculacao}}\"\n}"
+            },
+            "url": { "raw": "{{base_url}}/api/v1/professor/auth/vincular", "host": ["{{base_url}}"], "path": ["api", "v1", "professor", "auth", "vincular"] },
+            "description": "Público. Mesmo código usado no /start do Telegram. Login web NÃO consome o código (reutilizável até expirar). Retorna { token, expiraEm, professor:{id,nome} }. Token válido por 12h de inatividade. Sujeito a rate limit (5 tentativas erradas -> 429, bloqueio de 15min)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin API",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{admin_token}}" }] },
+      "item": [
+        {
+          "name": "Professores",
+          "item": [
+            {
+              "name": "Cadastrar professor",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "  const body = pm.response.json();",
+                      "  if (body.id) pm.collectionVariables.set('professor_id', body.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"nome\": \"Professor Novo\",\n  \"email\": \"professor.novo@escola.local\"\n}" },
+                "url": { "raw": "{{base_url}}/api/v1/professores", "host": ["{{base_url}}"], "path": ["api", "v1", "professores"] },
+                "description": "201 com o professor criado, incluindo código de vinculação inicial."
+              }
+            },
+            {
+              "name": "Listar professores",
+              "request": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/api/v1/professores", "host": ["{{base_url}}"], "path": ["api", "v1", "professores"] }
+              }
+            },
+            {
+              "name": "Reemitir código de vinculação",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professores/{{professor_id}}/codigo-vinculacao",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professores", "{{professor_id}}", "codigo-vinculacao"]
+                },
+                "description": "Gera um novo código (invalida o anterior)."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alunos",
+          "item": [
+            {
+              "name": "Cadastrar aluno",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "  const body = pm.response.json();",
+                      "  if (body.id) pm.collectionVariables.set('aluno_id', body.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nome\": \"Aluno Teste\",\n  \"dataNascimento\": \"2010-05-20\",\n  \"cpf\": \"12345678909\",\n  \"nomeResponsavel\": \"Mae Teste\",\n  \"professorIds\": [\"{{professor_id}}\"]\n}"
+                },
+                "url": { "raw": "{{base_url}}/api/v1/alunos", "host": ["{{base_url}}"], "path": ["api", "v1", "alunos"] },
+                "description": "201. nomeResponsavel obrigatório se menor de idade. professorIds vincula o aluno a um ou mais professores."
+              }
+            },
+            {
+              "name": "Listar alunos",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/alunos?professorId={{professor_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "alunos"],
+                  "query": [{ "key": "professorId", "value": "{{professor_id}}", "description": "opcional" }]
+                }
+              }
+            },
+            {
+              "name": "Histórico do aluno",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/alunos/{{aluno_id}}/historico",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "alunos", "{{aluno_id}}", "historico"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Professor Portal",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{professor_token}}" }] },
+      "item": [
+        {
+          "name": "Meu perfil",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/professor/me", "host": ["{{base_url}}"], "path": ["api", "v1", "professor", "me"] }
+          }
+        },
+        {
+          "name": "Meus alunos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/v1/professor/alunos", "host": ["{{base_url}}"], "path": ["api", "v1", "professor", "alunos"] }
+          }
+        },
+        {
+          "name": "Rascunho pendente do aluno",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/professor/alunos/{{aluno_id}}/rascunho-pendente",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "professor", "alunos", "{{aluno_id}}", "rascunho-pendente"]
+            }
+          }
+        },
+        {
+          "name": "Histórico do aluno (portal)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/professor/alunos/{{aluno_id}}/historico",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "professor", "alunos", "{{aluno_id}}", "historico"]
+            }
+          }
+        },
+        {
+          "name": "Relatório de Aula",
+          "item": [
+            {
+              "name": "Enviar áudio da aula",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 202) {",
+                      "  const body = pm.response.json();",
+                      "  if (body.id) pm.collectionVariables.set('relatorio_aula_id', body.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "audio", "type": "file", "src": [] },
+                    { "key": "dataAula", "value": "2026-08-14", "type": "text", "description": "opcional, AAAA-MM-DD" }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/alunos/{{aluno_id}}/relatorios-aula/audio",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "alunos", "{{aluno_id}}", "relatorios-aula", "audio"]
+                },
+                "description": "202 Accepted. Dispara o pipeline assíncrono (n8n) de transcrição/estruturação. Selecione um arquivo de áudio no campo 'audio' antes de enviar."
+              }
+            },
+            {
+              "name": "Consultar relatório de aula",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-aula/{{relatorio_aula_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-aula", "{{relatorio_aula_id}}"]
+                }
+              }
+            },
+            {
+              "name": "Responder pergunta",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"resposta\": \"Sim, o aluno praticou escalas maiores.\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-aula/{{relatorio_aula_id}}/responder-pergunta",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-aula", "{{relatorio_aula_id}}", "responder-pergunta"]
+                }
+              }
+            },
+            {
+              "name": "Revisar (pedir ajuste)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"instrucao\": \"Deixe o texto mais resumido.\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-aula/{{relatorio_aula_id}}/revisar",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-aula", "{{relatorio_aula_id}}", "revisar"]
+                }
+              }
+            },
+            {
+              "name": "Aprovar",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"versaoConfirmada\": 1\n}" },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-aula/{{relatorio_aula_id}}/aprovar",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-aula", "{{relatorio_aula_id}}", "aprovar"]
+                }
+              }
+            },
+            {
+              "name": "Cancelar",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-aula/{{relatorio_aula_id}}/cancelar",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-aula", "{{relatorio_aula_id}}", "cancelar"]
+                },
+                "description": "204 No Content."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Relatório Semestral",
+          "item": [
+            {
+              "name": "Semestres disponíveis",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/alunos/{{aluno_id}}/semestres-disponiveis",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "alunos", "{{aluno_id}}", "semestres-disponiveis"]
+                }
+              }
+            },
+            {
+              "name": "Criar relatório semestral",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201 || pm.response.code === 200) {",
+                      "  const body = pm.response.json();",
+                      "  if (body.id) pm.collectionVariables.set('relatorio_semestral_id', body.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"semestre\": \"{{semestre}}\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/alunos/{{aluno_id}}/relatorios-semestrais",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "alunos", "{{aluno_id}}", "relatorios-semestrais"]
+                },
+                "description": "Dispara a geração assíncrona (n8n) a partir dos relatórios de aula aprovados no período."
+              }
+            },
+            {
+              "name": "Consultar relatório semestral",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-semestrais/{{relatorio_semestral_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-semestrais", "{{relatorio_semestral_id}}"]
+                }
+              }
+            },
+            {
+              "name": "Revisar (pedir ajuste)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"instrucao\": \"Inclua mais detalhes sobre teoria musical.\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-semestrais/{{relatorio_semestral_id}}/revisar",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-semestrais", "{{relatorio_semestral_id}}", "revisar"]
+                }
+              }
+            },
+            {
+              "name": "Aprovar",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"versaoConfirmada\": 1\n}" },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-semestrais/{{relatorio_semestral_id}}/aprovar",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-semestrais", "{{relatorio_semestral_id}}", "aprovar"]
+                }
+              }
+            },
+            {
+              "name": "Cancelar",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/api/v1/professor/relatorios-semestrais/{{relatorio_semestral_id}}/cancelar",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "professor", "relatorios-semestrais", "{{relatorio_semestral_id}}", "cancelar"]
+                },
+                "description": "204 No Content."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Internal (n8n)",
+      "auth": { "type": "apikey", "apikey": [{ "key": "key", "value": "X-N8N-Service-Token" }, { "key": "value", "value": "{{n8n_service_token}}" }, { "key": "in", "value": "header" }] },
+      "item": [
+        {
+          "name": "Relatório de Aula",
+          "item": [
+            {
+              "name": "Transcrever áudio",
+              "request": {
+                "method": "POST",
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    { "key": "alunoId", "value": "{{aluno_id}}", "type": "text" },
+                    { "key": "professorId", "value": "{{professor_id}}", "type": "text" },
+                    { "key": "dataAula", "value": "2026-08-14", "type": "text" },
+                    { "key": "audio", "type": "file", "src": [] }
+                  ]
+                },
+                "url": { "raw": "{{base_url}}/internal/v1/relatorios-aula/transcrever", "host": ["{{base_url}}"], "path": ["internal", "v1", "relatorios-aula", "transcrever"] }
+              }
+            },
+            {
+              "name": "Estruturar relatório da aula",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/relatorios-aula/{{relatorio_aula_id}}/estruturar",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "relatorios-aula", "{{relatorio_aula_id}}", "estruturar"]
+                },
+                "description": "Nota: path usa o id da aula ({aulaId}) conforme o controller."
+              }
+            },
+            {
+              "name": "Responder pergunta (callback n8n)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"resposta\": \"...\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/relatorios-aula/{{relatorio_aula_id}}/responder-pergunta",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "relatorios-aula", "{{relatorio_aula_id}}", "responder-pergunta"]
+                }
+              }
+            },
+            {
+              "name": "Revisar (callback n8n)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"instrucao\": \"...\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/relatorios-aula/{{relatorio_aula_id}}/revisar",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "relatorios-aula", "{{relatorio_aula_id}}", "revisar"]
+                }
+              }
+            },
+            {
+              "name": "Aprovar (callback n8n)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"versaoConfirmada\": 1\n}" },
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/relatorios-aula/{{relatorio_aula_id}}/aprovar",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "relatorios-aula", "{{relatorio_aula_id}}", "aprovar"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Relatório Semestral",
+          "item": [
+            {
+              "name": "Semestres disponíveis",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/alunos/{{aluno_id}}/semestres-disponiveis",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "alunos", "{{aluno_id}}", "semestres-disponiveis"]
+                }
+              }
+            },
+            {
+              "name": "Contagem de aulas no período",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"alunoId\": \"{{aluno_id}}\",\n  \"periodoChave\": \"{{periodo_chave}}\"\n}" },
+                "url": { "raw": "{{base_url}}/internal/v1/relatorios-semestrais/contagem", "host": ["{{base_url}}"], "path": ["internal", "v1", "relatorios-semestrais", "contagem"] }
+              }
+            },
+            {
+              "name": "Criar relatório semestral",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "  const body = pm.response.json();",
+                      "  if (body.id) pm.collectionVariables.set('relatorio_semestral_id', body.id);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"alunoId\": \"{{aluno_id}}\",\n  \"professorId\": \"{{professor_id}}\",\n  \"periodoChave\": \"{{periodo_chave}}\"\n}" },
+                "url": { "raw": "{{base_url}}/internal/v1/relatorios-semestrais", "host": ["{{base_url}}"], "path": ["internal", "v1", "relatorios-semestrais"] }
+              }
+            },
+            {
+              "name": "Revisar (callback n8n)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"instrucao\": \"...\"\n}" },
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/relatorios-semestrais/{{relatorio_semestral_id}}/revisar",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "relatorios-semestrais", "{{relatorio_semestral_id}}", "revisar"]
+                }
+              }
+            },
+            {
+              "name": "Aprovar (callback n8n)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"versaoConfirmada\": 1\n}" },
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/relatorios-semestrais/{{relatorio_semestral_id}}/aprovar",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "relatorios-semestrais", "{{relatorio_semestral_id}}", "aprovar"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Professores",
+          "item": [
+            {
+              "name": "Alunos do professor",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/professores/{{professor_id}}/alunos",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "professores", "{{professor_id}}", "alunos"]
+                }
+              }
+            },
+            {
+              "name": "Histórico de aluno de um professor",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/professores/{{professor_id}}/alunos/{{aluno_id}}/historico",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "professores", "{{professor_id}}", "alunos", "{{aluno_id}}", "historico"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Telegram",
+          "item": [
+            {
+              "name": "Vincular conta Telegram",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"telegramUserId\": \"{{telegram_user_id}}\",\n  \"codigoVinculacao\": \"{{codigo_vinculacao}}\"\n}" },
+                "url": { "raw": "{{base_url}}/internal/v1/telegram/vinculacao", "host": ["{{base_url}}"], "path": ["internal", "v1", "telegram", "vinculacao"] },
+                "description": "Chamado pelo fluxo n8n do bot ao processar /start <codigo>. Consome o código (uso único)."
+              }
+            },
+            {
+              "name": "Buscar professor por Telegram user id",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/internal/v1/telegram/{{telegram_user_id}}/professor",
+                  "host": ["{{base_url}}"],
+                  "path": ["internal", "v1", "telegram", "{{telegram_user_id}}", "professor"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Actuator health",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/actuator/health", "host": ["{{base_url}}"], "path": ["actuator", "health"] }
+          }
+        }
+      ]
+    }
+  ]
+}
