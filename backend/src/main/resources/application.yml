@@ -28,15 +28,21 @@ spring:
 telegram:
   bot-token: ${TELEGRAM_BOT_TOKEN}
 
+# Speech-to-Text: Groq (Whisper), contrato compativel com a API de audio da OpenAI.
+# whisper-large-v3-turbo aceita o .webm/Opus gravado pelo navegador sem conversao.
 stt:
   api-key: ${STT_API_KEY}
+  model: ${STT_MODEL:whisper-large-v3-turbo}
+  language: ${STT_LANGUAGE:pt}
   provider:
-    url: ${STT_PROVIDER_URL:https://stt-provider.example.com/v1/transcricoes}
+    url: ${STT_PROVIDER_URL:https://api.groq.com/openai/v1/audio/transcriptions}
 
+# LLM: Groq (chat completions), mesmo contrato da OpenAI.
 llm:
   api-key: ${LLM_API_KEY}
+  model: ${LLM_MODEL:llama-3.3-70b-versatile}
   provider:
-    url: ${LLM_PROVIDER_URL:https://llm-provider.example.com/v1/completions}
+    url: ${LLM_PROVIDER_URL:https://api.groq.com/openai/v1/chat/completions}
 
 security:
   cpf-encryption-key: ${CPF_ENCRYPTION_KEY}

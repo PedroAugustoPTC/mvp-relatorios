@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.UUID;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -146,7 +145,7 @@ public class ProfessorPortalRelatorioAulaController {
       @AuthenticationPrincipal UUID professorId, @PathVariable UUID relatorioId) {
     RelatorioAula relatorio =
         controleAcesso.exigirRelatorioAulaDoProfessor(professorId, relatorioId);
-    return mapper.paraResponseDto(relatorio, List.of());
+    return mapper.paraResponseDto(relatorio, mapper.perguntasPendentesDe(relatorio));
   }
 
   /** {@code POST /api/v1/professor/relatorios-aula/{relatorioId}/responder-pergunta} */

@@ -65,6 +65,21 @@ class RelatorioAulaMapperTest {
   }
 
   @Test
+  void aplicarPayloadDevePersistirAsPerguntasPendentesParaConsultaPosterior() {
+    RelatorioAula entidade = new RelatorioAula();
+
+    mapper.aplicarPayload(entidade, payloadCompleto());
+
+    assertThat(mapper.perguntasPendentesDe(entidade))
+        .containsExactlyElementsOf(payloadCompleto().perguntasPendentes());
+  }
+
+  @Test
+  void perguntasPendentesDeDeveSerVaziaQuandoNadaFoiPersistido() {
+    assertThat(mapper.perguntasPendentesDe(new RelatorioAula())).isEmpty();
+  }
+
+  @Test
   void paraPayloadDeveMontarPayloadAPartirDaEntidade() throws Exception {
     RelatorioAula entidade = new RelatorioAula();
     entidade.setConteudosTrabalhados(objectMapper.writeValueAsString(List.of("c1")));

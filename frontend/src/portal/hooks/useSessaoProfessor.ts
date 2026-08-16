@@ -27,7 +27,7 @@ export type EstadoSessao = 'verificando' | 'autenticado' | 'expirado';
 export interface UseSessaoProfessor {
   estado: EstadoSessao;
   professor: ProfessorSessao | null;
-  autenticar: (token: string) => void;
+  autenticar: (token: string) => Promise<void>;
   encerrarSessao: () => void;
   revalidar: () => Promise<void>;
 }
@@ -69,10 +69,14 @@ export function useSessaoProfessorInterno(): UseSessaoProfessor {
     void revalidar();
   }, [revalidar]);
 
-  const autenticar = useCallback((token: string): void => {
-    guardarTokenPortal(token);
-    setEstado('verificando');
-  }, []);
+  const autenticar = useCallback(
+    async (token: string): Promise<void> => {
+      guardarTokenPortal(token);
+      setEstado('verificando');
+      await revalidar();
+    },
+    [revalidar],
+  );
 
   const encerrarSessao = useCallback((): void => {
     descartarTokenPortal();

@@ -15,13 +15,13 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Aplica a resposta do professor a uma pergunta de acompanhamento pendente (T043, FR-007).
  *
- * <p><b>Simplificacao deliberada para o MVP:</b> o dominio nao persiste a lista individual de
- * perguntas pendentes (elas sao derivadas a cada chamada ao LlmGateway, nao um estado
- * duravel/encadeado). Por isso, este use case adota a abordagem minima que atende a intencao da
- * FR-007 — nao bloquear a entrega do relatorio por falta de um detalhe: a resposta do professor e
- * anexada as observacoes do relatorio e, apos qualquer resposta fornecida, o relatorio e tratado
- * como completo (sem mais pendencias), avancando para PENDENTE_REVISAO e gerando o PDF. Um
- * mecanismo de multiplas perguntas encadeadas por relatorio fica fora do escopo do MVP.
+ * <p><b>Simplificacao deliberada para o MVP:</b> o relatorio guarda a lista de perguntas em aberto
+ * apenas para poder exibi-la ao professor, e nao um encadeamento pergunta-a-pergunta. Por isso este
+ * use case adota a abordagem minima que atende a intencao da FR-007 — nao bloquear a entrega do
+ * relatorio por falta de um detalhe: a resposta do professor e anexada as observacoes do relatorio
+ * e, apos qualquer resposta fornecida, todas as pendencias sao consideradas resolvidas, o relatorio
+ * avanca para PENDENTE_REVISAO e o PDF e gerado. Responder cada pergunta individualmente fica fora
+ * do escopo do MVP.
  */
 @Service
 public class ResponderPerguntaUseCase {
@@ -56,6 +56,7 @@ public class ResponderPerguntaUseCase {
             ? novaLinha
             : observacoesAtuais + "\n" + novaLinha);
 
+    relatorio.setPerguntasPendentes("[]");
     relatorio.marcarPendenteRevisao();
     relatorio.setAtualizadoEm(OffsetDateTime.now());
     pdfService.gerarEAplicarPdf(relatorio);

@@ -12,17 +12,17 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 /**
- * Implementacao concreta de {@link LlmGateway} (T039) que chama um provedor de LLM generico via
- * HTTP REST, enviando um prompt de estruturacao/revisao e retornando o JSON textual da resposta.
+ * Implementacao concreta de {@link LlmGateway} (T039) sobre a API de chat da Groq, que segue o
+ * contrato {@code POST /openai/v1/chat/completions} da OpenAI: envia {@code { "model": ...,
+ * "messages": [...] } } e recebe o texto em {@code choices[0].message.content}.
  *
- * <p>Como nenhum provedor especifico foi definido no research.md, esta implementacao adota um
- * contrato REST generico (URL + chave via variaveis de ambiente): envia {@code { "prompt": "..." }
- * } e espera receber {@code { "resposta": "...json..." } } (ou {@code "text"}/{@code "content"}). O
- * JSON retornado e validado sintaticamente antes de ser devolvido ao chamador; se invalido, uma
- * unica tentativa de correcao e feita reenviando um prompt pedindo para corrigir o JSON (Edge Cases
- * do spec.md).
+ * <p>O modo JSON nativo do provedor ({@code response_format: json_object}) e usado para garantir
+ * que a resposta venha sem cercas de markdown ou texto ao redor. Ainda assim o JSON e validado
+ * sintaticamente antes de ser devolvido ao chamador; se invalido, uma unica tentativa de correcao e
+ * feita reenviando um prompt pedindo para corrigir o JSON (Edge Cases do spec.md).
  */
 @Component
 public class LlmGatewayImpl implements LlmGateway {
@@ -123,15 +123,18 @@ public class LlmGatewayImpl implements LlmGateway {
 
   private final RestClient restClient;
   private final String apiKey;
+  private final String modelo;
   private final ObjectMapper objectMapper;
 
   public LlmGatewayImpl(
-      @Value("${llm.provider.url:https://llm-provider.example.com/v1/completions}")
+      @Value("${llm.provider.url:https://api.groq.com/openai/v1/chat/completions}")
           String providerUrl,
       @Value("${llm.api-key}") String apiKey,
+      @Value("${llm.model:llama-3.3-70b-versatile}") String modelo,
       ObjectMapper objectMapper) {
     this.restClient = RestClient.builder().baseUrl(providerUrl).build();
     this.apiKey = apiKey;
+    this.modelo = modelo;
     this.objectMapper = objectMapper;
   }
 
@@ -198,32 +201,57 @@ public class LlmGatewayImpl implements LlmGateway {
 
   private String chamarProvedor(String prompt) {
     try {
-      ObjectNode corpo = objectMapper.createObjectNode();
-      corpo.put("prompt", prompt);
       String respostaBruta =
           restClient
               .post()
               .contentType(MediaType.APPLICATION_JSON)
               .header(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-              .body(corpo)
+              .body(montarCorpo(prompt))
               .retrieve()
               .body(String.class);
       return extrairConteudo(respostaBruta);
+    } catch (RestClientResponseException e) {
+      // O provedor respondeu com erro HTTP (ex.: 401 chave invalida, 429 limite do plano
+      // gratuito): o corpo traz a causa e e essencial para diagnostico.
+      log.warn(
+          "Provedor de LLM retornou HTTP {}: {}",
+          e.getStatusCode(),
+          e.getResponseBodyAsString(),
+          e);
+      throw new IllegalStateException("Provedor de LLM retornou HTTP " + e.getStatusCode(), e);
     } catch (RestClientException e) {
       log.warn("Falha ao chamar provedor de LLM", e);
       throw new IllegalStateException("Falha ao chamar o provedor de LLM", e);
     }
   }
 
-  /**
-   * Extrai o texto de conteudo de um JSON generico {@code { "resposta"|"text"|"content": ... } }.
-   */
+  /** Monta o corpo de chat completions com o prompt como unica mensagem do usuario. */
+  private ObjectNode montarCorpo(String prompt) {
+    ObjectNode corpo = objectMapper.createObjectNode();
+    corpo.put("model", modelo);
+    // Temperatura baixa: a tarefa e extrair/reorganizar o que o professor disse, nao criar texto.
+    corpo.put("temperature", 0.2);
+    ObjectNode mensagem = corpo.putArray("messages").addObject();
+    mensagem.put("role", "user");
+    mensagem.put("content", prompt);
+    // Todos os prompts desta classe exigem "APENAS um JSON valido"; o modo JSON nativo do provedor
+    // impede que a resposta venha embrulhada em cercas de markdown.
+    corpo.putObject("response_format").put("type", "json_object");
+    return corpo;
+  }
+
+  /** Extrai o texto da resposta em {@code choices[0].message.content}. */
   private String extrairConteudo(String respostaBruta) {
     if (respostaBruta == null || respostaBruta.isBlank()) {
       return null;
     }
     try {
       JsonNode raiz = objectMapper.readTree(respostaBruta);
+      JsonNode conteudo = raiz.path("choices").path(0).path("message").path("content");
+      if (!conteudo.isMissingNode() && !conteudo.isNull()) {
+        return conteudo.asText(null);
+      }
+      // Envelopes alternativos, caso a URL aponte para um provedor com contrato proprio.
       for (String campo : List.of("resposta", "text", "content")) {
         JsonNode valor = raiz.get(campo);
         if (valor != null && !valor.isNull()) {

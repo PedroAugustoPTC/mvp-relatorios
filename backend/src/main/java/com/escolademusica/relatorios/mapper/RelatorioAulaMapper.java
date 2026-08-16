@@ -40,6 +40,15 @@ public class RelatorioAulaMapper {
     entidade.setDificuldades(escreverJson(payload.dificuldades()));
     entidade.setAtividadesPropostas(escreverJson(payload.atividadesPropostas()));
     entidade.setObservacoes(payload.observacoes());
+    entidade.setPerguntasPendentes(escreverJson(payload.perguntasPendentes()));
+  }
+
+  /**
+   * Perguntas de acompanhamento ainda em aberto no relatorio persistido — o que permite ao endpoint
+   * de consulta (usado pelo polling do portal) devolver o mesmo estado da chamada que as gerou.
+   */
+  public List<String> perguntasPendentesDe(RelatorioAula entidade) {
+    return lerLista(entidade.getPerguntasPendentes());
   }
 
   /** Monta o payload atual da entidade, para reenviar ao LlmGateway em uma revisao (T044). */

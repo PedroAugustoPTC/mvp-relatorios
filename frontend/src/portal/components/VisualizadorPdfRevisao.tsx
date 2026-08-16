@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import PdfViewer from '../../components/PdfViewer';
+import { professorApiClient } from '../services/professorApiClient';
 
 /**
  * Conferencia e decisao sobre o PDF gerado (T045), reaproveitado pelos fluxos de relatorio de aula
@@ -35,7 +36,11 @@ function VisualizadorPdfRevisao({
       <p>Versão {versao}</p>
 
       {pdfUrl ? (
-        <PdfViewer pdfUrl={pdfUrl} titulo="Abrir o PDF do relatório" />
+        <PdfViewer
+          pdfUrl={pdfUrl}
+          titulo="Abrir o PDF do relatório"
+          baixarPdf={professorApiClient.baixarArquivo}
+        />
       ) : (
         <p role="status" aria-live="polite">
           O PDF ainda está sendo gerado.

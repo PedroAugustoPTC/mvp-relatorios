@@ -313,6 +313,38 @@ class ProfessorPortalRelatorioAulaControllerTest {
         .andExpect(jsonPath("$.pdfUrl").value("/storage/pdfs/relatorio.pdf"));
   }
 
+  /**
+   * O portal acompanha o relatorio por polling nesta rota: se ela nao devolvesse as perguntas ainda
+   * em aberto, um relatorio parado em RASCUNHO aguardando o professor ficaria indistinguivel de um
+   * ainda em processamento — e o polling nunca terminaria.
+   */
+  @Test
+  void deveDevolverAsPerguntasPendentesPersistidasAoConsultar() throws Exception {
+    RelatorioAula relatorio = relatorioPersistido();
+    when(controleAcesso.exigirRelatorioAulaDoProfessor(professorId, relatorioId))
+        .thenReturn(relatorio);
+    when(mapper.perguntasPendentesDe(relatorio)).thenReturn(List.of("Qual peca foi trabalhada?"));
+    when(mapper.paraResponseDto(relatorio, List.of("Qual peca foi trabalhada?")))
+        .thenReturn(
+            new EstruturarRelatorioResponseDto(
+                relatorioId,
+                "RASCUNHO",
+                List.of(),
+                "",
+                List.of(),
+                List.of(),
+                "",
+                List.of("Qual peca foi trabalhada?"),
+                null,
+                1));
+
+    mockMvc
+        .perform(get("/api/v1/professor/relatorios-aula/{relatorioId}", relatorioId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("RASCUNHO"))
+        .andExpect(jsonPath("$.perguntasPendentes[0]").value("Qual peca foi trabalhada?"));
+  }
+
   @Test
   void deveResponderPerguntaPendente() throws Exception {
     when(responderPerguntaUseCase.responder(eq(relatorioId), eq("Trabalhamos a escala de Sol")))

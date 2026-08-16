@@ -15,6 +15,9 @@ class RelatorioAulaTest {
 
     assertThat(relatorio.getStatus()).isEqualTo(RelatorioAula.StatusRelatorioAula.RASCUNHO);
     assertThat(relatorio.getVersao()).isEqualTo(1);
+    // A coluna e NOT NULL e o Hibernate sempre a inclui no INSERT: sem este default o relatorio
+    // recem-criado (que nasce antes da estruturacao) nao conseguiria ser persistido.
+    assertThat(relatorio.getPerguntasPendentes()).isEqualTo("[]");
   }
 
   @Test

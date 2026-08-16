@@ -1,6 +1,6 @@
 import { ChangeEvent, useEffect, useState } from 'react';
 import PdfViewer from '../components/PdfViewer';
-import { ApiError } from '../services/apiClient';
+import { apiClient, ApiError } from '../services/apiClient';
 import { Aluno, listarAlunos } from '../services/alunoService';
 import { consultarHistorico, HistoricoAluno as HistoricoAlunoDto, ItemHistorico } from '../services/historicoService';
 import './historico-aluno.css';
@@ -137,7 +137,11 @@ function HistoricoAluno(): JSX.Element {
                 )}
               </dl>
               {itemSelecionado.pdfUrl ? (
-                <PdfViewer pdfUrl={itemSelecionado.pdfUrl} titulo="Abrir PDF do relatorio" />
+                <PdfViewer
+                  pdfUrl={itemSelecionado.pdfUrl}
+                  titulo="Abrir PDF do relatorio"
+                  baixarPdf={apiClient.baixarArquivo}
+                />
               ) : (
                 <p>PDF nao disponivel.</p>
               )}

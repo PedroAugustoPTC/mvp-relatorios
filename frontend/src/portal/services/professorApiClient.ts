@@ -100,8 +100,41 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
+/**
+ * Baixa um arquivo binario (PDF de relatorio) com o token de sessao do professor.
+ *
+ * Existe porque `<iframe src>` e `<a href>` nao enviam o header `Authorization`: apontar o elemento
+ * direto para a URL do PDF resulta em 401 (ou, pior, no index.html do fallback SPA). Quem consome
+ * transforma o Blob em uma `blob:` URL para exibir/baixar. A sessao deslizante continua valendo — o
+ * token renovado da resposta e persistido como em qualquer outra chamada.
+ */
+async function baixarArquivo(path: string): Promise<Blob> {
+  const token = obterTokenPortal();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'GET',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+
+  aplicarTokenRenovado(response);
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      descartarTokenPortal();
+    }
+    throw new ApiError(
+      'FALHA_DOWNLOAD',
+      'Nao foi possivel baixar o arquivo. Tente novamente.',
+      response.status,
+    );
+  }
+
+  return response.blob();
+}
+
 export const professorApiClient = {
   get: <T>(path: string): Promise<T> => request<T>(path, { method: 'GET' }),
+
+  baixarArquivo,
 
   post: <T>(path: string, body?: unknown): Promise<T> =>
     request<T>(path, {

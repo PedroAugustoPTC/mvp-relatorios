@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { consultarHistorico, HistoricoAluno } from '../services/professorPortalService';
+import { professorApiClient } from '../services/professorApiClient';
 
 /**
  * Historico unificado do aluno no portal (T047, FR-023): relatorios de aula e semestrais, criados
@@ -28,6 +29,33 @@ function HistoricoAlunoPortal(): JSX.Element {
   const [historico, setHistorico] = useState<HistoricoAluno | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(true);
+  const [erroPdf, setErroPdf] = useState<string | null>(null);
+
+  /**
+   * Abre o PDF de um relatorio. A rota que serve o arquivo exige `Authorization`, header que um
+   * `<a href>` nao envia — dai o download via fetch autenticado e a exibicao por `blob:` URL.
+   *
+   * Como o `window.open` acontece depois de um `await`, o navegador pode trata-lo como popup e
+   * bloquea-lo; nesse caso o fallback baixa o arquivo em vez de abrir uma aba.
+   */
+  async function abrirPdf(pdfUrl: string, nomeSugerido: string): Promise<void> {
+    setErroPdf(null);
+    try {
+      const blob = await professorApiClient.baixarArquivo(pdfUrl);
+      const url = URL.createObjectURL(blob);
+      const aba = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!aba) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${nomeSugerido}.pdf`;
+        link.click();
+      }
+      // A aba/download ja consumiu a URL; revogar depois apenas libera a memoria do blob.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      setErroPdf('Não foi possível abrir o PDF. Tente novamente.');
+    }
+  }
 
   useEffect(() => {
     let ativo = true;
@@ -74,6 +102,12 @@ function HistoricoAlunoPortal(): JSX.Element {
     <section>
       <h1>Histórico de {historico?.aluno.nome}</h1>
 
+      {erroPdf && (
+        <p className="portal-erro" role="alert">
+          {erroPdf}
+        </p>
+      )}
+
       {relatorios.length === 0 ? (
         <p>Este aluno ainda não tem relatórios aprovados.</p>
       ) : (
@@ -104,9 +138,23 @@ function HistoricoAlunoPortal(): JSX.Element {
                   <td>{formatarData(item.aprovadoEm)}</td>
                   <td>
                     {item.pdfUrl ? (
-                      <a href={item.pdfUrl} target="_blank" rel="noopener noreferrer">
+                      <button
+                        type="button"
+                        className="portal-botao portal-botao--secundario"
+                        onClick={() =>
+                          abrirPdf(
+                            item.pdfUrl as string,
+                            descricao(
+                              item.tipo,
+                              item.dataAula,
+                              item.periodoInicio,
+                              item.periodoFim,
+                            ),
+                          )
+                        }
+                      >
                         Abrir PDF
-                      </a>
+                      </button>
                     ) : (
                       '—'
                     )}

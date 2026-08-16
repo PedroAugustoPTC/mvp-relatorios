@@ -53,6 +53,22 @@ public class RelatorioAula {
   @Column(name = "observacoes", columnDefinition = "text")
   private String observacoes;
 
+  /**
+   * Perguntas de acompanhamento que o professor ainda precisa responder (FR-007), como JSON.
+   *
+   * <p>Persistidas para que o acompanhamento por polling ({@code GET /relatorios-aula/{id}})
+   * consiga devolve-las: sem isso um relatorio em RASCUNHO aguardando resposta ficava
+   * indistinguivel de um relatorio ainda em processamento.
+   *
+   * <p>O default {@code []} vale para o relatorio recem-criado, que nasce antes da estruturacao e
+   * portanto ainda nao tem pendencia alguma. Ele precisa estar aqui, e nao so no DEFAULT da coluna:
+   * o Hibernate sempre inclui a coluna no INSERT, entao um campo nulo viraria um NULL explicito e o
+   * DEFAULT do banco nunca seria aplicado.
+   */
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "perguntas_pendentes", nullable = false, columnDefinition = "jsonb")
+  private String perguntasPendentes = "[]";
+
   @Column(name = "versao", nullable = false)
   private int versao = 1;
 
@@ -201,6 +217,14 @@ public class RelatorioAula {
 
   public void setObservacoes(String observacoes) {
     this.observacoes = observacoes;
+  }
+
+  public String getPerguntasPendentes() {
+    return perguntasPendentes;
+  }
+
+  public void setPerguntasPendentes(String perguntasPendentes) {
+    this.perguntasPendentes = perguntasPendentes;
   }
 
   public int getVersao() {

@@ -1,14 +1,24 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import HistoricoAluno from '../src/pages/HistoricoAluno';
 import * as alunoService from '../src/services/alunoService';
+import { apiClient } from '../src/services/apiClient';
 import * as historicoService from '../src/services/historicoService';
 
 vi.mock('../src/services/alunoService');
 vi.mock('../src/services/historicoService');
 
 describe('HistoricoAluno', () => {
+  // O PDF e buscado por fetch autenticado (a rota exige Authorization, que um iframe nao envia) e
+  // exibido a partir de uma blob: URL. O jsdom nao implementa a API de object URL.
+  beforeAll(() => {
+    Object.assign(URL, {
+      createObjectURL: vi.fn(() => 'blob:fake-pdf'),
+      revokeObjectURL: vi.fn(),
+    });
+  });
+
   it('lista alunos e exibe o historico apos selecao', async () => {
     vi.mocked(alunoService.listarAlunos).mockResolvedValue([
       {
@@ -76,11 +86,15 @@ describe('HistoricoAluno', () => {
           periodoInicio: null,
           periodoFim: null,
           status: 'APROVADO',
-          pdfUrl: 'http://exemplo.com/aula.pdf',
+          pdfUrl: '/api/v1/arquivos/relatorios/relatorio-aula-rel-1-v1.pdf',
           aprovadoEm: '2026-03-11T10:00:00Z',
         },
       ],
     });
+
+    const baixarArquivo = vi
+      .spyOn(apiClient, 'baixarArquivo')
+      .mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
 
     render(<HistoricoAluno />);
 
@@ -90,7 +104,13 @@ describe('HistoricoAluno', () => {
     const botaoItem = await screen.findByRole('button', { name: /relatorio de aula - 2026-03-10/i });
     await userEvent.click(botaoItem);
 
-    expect(await screen.findByText(/abrir pdf do relatorio/i)).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /abrir pdf do relatorio/i })).toHaveAttribute(
+      'href',
+      'blob:fake-pdf',
+    );
+    expect(baixarArquivo).toHaveBeenCalledWith(
+      '/api/v1/arquivos/relatorios/relatorio-aula-rel-1-v1.pdf',
+    );
   });
 
   it('exibe mensagem quando o historico esta vazio', async () => {
