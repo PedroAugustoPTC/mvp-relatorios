@@ -1,28 +1,17 @@
 <!--
 Sync Impact Report
-- Version change: (template, unratified) → 1.0.0
-- Rationale: Initial ratification of the project constitution. MAJOR because this establishes the
-  first binding set of governance rules (no prior enforceable version existed).
-- Modified principles: n/a (initial version)
+- Version change: 1.0.0 → 1.1.0
+- Rationale: MINOR bump — adds a new mandatory Git workflow rule to the "Fluxo de Desenvolvimento
+  e Quality Gates" section (material expansion of governance content, no existing principle
+  redefined or removed).
+- Modified principles: n/a
 - Added sections:
-  - Core Principles: I. Clean Architecture (Non-Negotiable), II. Padrão de Nomenclatura
-    Obrigatório, III. Cobertura Mínima de Testes Unitários — 90% (Non-Negotiable),
-    IV. Separação n8n / Backend / Banco de Dados, V. Segurança e Privacidade desde o Design
-    (LGPD), VI. Simplicidade e Foco no MVP
-  - Stack Tecnológica e Restrições Arquiteturais
-  - Fluxo de Desenvolvimento e Quality Gates
-  - Governance
+  - Fluxo de Desenvolvimento e Quality Gates → nova regra obrigatória de branching (pull da main +
+    criação de branch dedicada por feature/spec)
 - Removed sections: none
-- Templates requiring follow-up:
-  - .specify/templates/plan-template.md — ⚠ pending manual check that its Constitution Check
-    gate references Clean Architecture layers and the 90% coverage gate
-  - .specify/templates/tasks-template.md — ⚠ pending manual check that generated task lists
-    include a test-coverage verification task
-  - .specify/templates/spec-template.md — ✅ no changes required (no constitution-specific
-    references)
-- Deferred items: RATIFICATION_DATE assumed as today's date (2026-08-13) since this is the first
-  ratification produced in this session; confirm with the project owner if a different historical
-  date should be recorded.
+- Templates requiring follow-up: none identified (regra é operacional/Git, não exige mudança nos
+  templates de plan/spec/tasks)
+- Deferred items: none
 -->
 
 # MVP Escola de Música — IA + n8n + Telegram Constitution
@@ -164,6 +153,12 @@ antes de investir em funcionalidades avançadas; complexidade prematura atrasa e
 
 ## Fluxo de Desenvolvimento e Quality Gates
 
+- Sempre que uma nova feature ou spec começar a ser trabalhada, DEVE ser feito primeiro um `git
+  pull` da branch `main` (ou equivalente: `git fetch` + `git merge`/`git rebase` de `origin/main`)
+  para garantir que o trabalho parte do estado mais atualizado do repositório, e em seguida DEVE
+  ser criada uma nova branch dedicada exclusivamente àquela feature/spec (ex.:
+  `feature/<nome-da-spec>`), a partir da `main` já atualizada. Nenhum código de implementação da
+  feature/spec DEVE ser commitado diretamente na `main` ou em uma branch de outra feature/spec.
 - Todo Pull Request DEVE demonstrar aderência às camadas de Clean Architecture (Princípio I) e ao
   padrão de nomenclatura (Princípio II); revisores bloqueiam PRs que misturem responsabilidades de
   camada.
@@ -199,5 +194,5 @@ política abaixo, e (3) verificação de que os templates dependentes (`plan-tem
 constituição durante o code review; violações não justificadas bloqueiam o merge. Justificativas
 de exceção DEVEM ser registradas na descrição do PR e revisadas por outro desenvolvedor.
 
-**Version**: 1.0.0 | **Ratified**: 2026-08-13 | **Last Amended**: 2026-08-13
+**Version**: 1.1.0 | **Ratified**: 2026-08-13 | **Last Amended**: 2026-08-17
 </content>
