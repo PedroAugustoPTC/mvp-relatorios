@@ -32,6 +32,18 @@ public class VinculoTelegram {
   @Column(name = "vinculado_em", nullable = false)
   private OffsetDateTime vinculadoEm;
 
+  /**
+   * Aluno que o professor escolheu na mensagem de texto mais recente, antes de enviar o audio da
+   * aula (bot do Telegram, canal exclusivo de registro de aula). Cada mensagem do Telegram dispara
+   * uma execucao nova e isolada do n8n; essa selecao precisa ficar aqui para sobreviver de uma
+   * mensagem para a proxima.
+   */
+  @Column(name = "aluno_selecionado_id")
+  private UUID alunoSelecionadoId;
+
+  @Column(name = "aluno_selecionado_em")
+  private OffsetDateTime alunoSelecionadoEm;
+
   public VinculoTelegram() {}
 
   public UUID getId() {
@@ -64,5 +76,21 @@ public class VinculoTelegram {
 
   public void setVinculadoEm(OffsetDateTime vinculadoEm) {
     this.vinculadoEm = vinculadoEm;
+  }
+
+  public UUID getAlunoSelecionadoId() {
+    return alunoSelecionadoId;
+  }
+
+  public void setAlunoSelecionadoId(UUID alunoSelecionadoId) {
+    this.alunoSelecionadoId = alunoSelecionadoId;
+  }
+
+  public OffsetDateTime getAlunoSelecionadoEm() {
+    return alunoSelecionadoEm;
+  }
+
+  public void setAlunoSelecionadoEm(OffsetDateTime alunoSelecionadoEm) {
+    this.alunoSelecionadoEm = alunoSelecionadoEm;
   }
 }

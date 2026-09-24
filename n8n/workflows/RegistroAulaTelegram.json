@@ -1,0 +1,1295 @@
+{
+  "name": "RegistroAulaTelegram - Vinculacao + Registro de Aula (workflow unico)",
+  "active": false,
+  "nodes": [
+    {
+      "id": "trigger",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        600
+      ],
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "check-vinculo",
+      "name": "Professor Vinculado?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/telegram/{{$('Telegram Trigger').item.json.message.from.id}}/professor",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-vinculado",
+      "name": "If Vinculado",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        600
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.professorId}}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "tentar-vincular",
+      "name": "Tentar Vincular",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        900
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/telegram/vinculacao",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"telegramUserId\": String($('Telegram Trigger').item.json.message.from.id), \"codigoVinculacao\": ($('Telegram Trigger').item.json.message.text || '').trim() } }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-codigo-valido",
+      "name": "Codigo Valido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        880,
+        900
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.professorId}}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "msg-vinculado-sucesso",
+      "name": "Confirmar Vinculacao",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        800
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "=Conta vinculada com sucesso, {{$json.nomeProfessor}}! Para registrar uma aula, envie o nome do aluno.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "msg-pedir-codigo",
+      "name": "Pedir Codigo de Vinculacao",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        1000
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "Ola! Para usar o bot, envie o codigo de vinculacao que a secretaria da escola te passou.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "consultar-rascunho",
+      "name": "Consultar Rascunho Pendente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        400
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/telegram/{{$('Telegram Trigger').item.json.message.from.id}}/rascunho-pendente",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-rascunho",
+      "name": "Ha Rascunho Pendente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        880,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.existeRascunho}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "consultar-relatorio-atual",
+      "name": "Consultar Relatorio Atual",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        200
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/relatorios-aula/{{$json.relatorioId}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-pergunta-pendente",
+      "name": "Tem Pergunta Pendente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.perguntasPendentes.length}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "responder-pergunta",
+      "name": "Responder Pergunta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/relatorios-aula/{{$json.relatorioId}}/responder-pergunta",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "resposta",
+              "value": "={{($('Telegram Trigger').item.json.message.text || '').trim()}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-aprovar",
+      "name": "Decisao e Aprovar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{($('Telegram Trigger').item.json.message.text || '').trim()}}",
+              "rightValue": "aprovar",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "aprovar",
+      "name": "Aprovar Relatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/relatorios-aula/{{$('Consultar Relatorio Atual').item.json.relatorioId}}/aprovar",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "versaoConfirmada",
+              "value": "={{$('Consultar Relatorio Atual').item.json.versao}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msg-aprovado",
+      "name": "Confirmar Aprovacao",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1980,
+        260
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "Relatorio aprovado e salvo no historico do aluno.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "revisar",
+      "name": "Revisar Relatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/relatorios-aula/{{$('Consultar Relatorio Atual').item.json.relatorioId}}/revisar",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "instrucao",
+              "value": "={{($('Telegram Trigger').item.json.message.text || '').trim()}}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-tem-audio",
+      "name": "Mensagem Tem Audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        500
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$('Telegram Trigger').item.json.message.voice?.file_id}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "baixar-audio",
+      "name": "Baixar Audio Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1320,
+        450
+      ],
+      "parameters": {
+        "resource": "file",
+        "operation": "get",
+        "fileId": "={{$('Telegram Trigger').item.json.message.voice.file_id}}"
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "baixar-bytes-audio",
+      "name": "Baixar Bytes do Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1430,
+        450
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.telegram.org/file/bot{{$env.TELEGRAM_BOT_TOKEN}}/{{$json.result.file_path}}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "enviar-audio",
+      "name": "Enviar Audio para Backend",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        450
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/telegram/{{$('Telegram Trigger').item.json.message.from.id}}/relatorios-aula/audio",
+        "sendBinaryData": true,
+        "contentType": "multipart-form-data",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "audio",
+              "inputDataFieldName": "data"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-pergunta-pos-audio",
+      "name": "Pergunta Pendente Apos Audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1760,
+        450
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.perguntasPendentes.length}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "msg-pergunta",
+      "name": "Perguntar Pendencia",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1980,
+        500
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "={{$json.perguntasPendentes[0]}}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "selecionar-aluno",
+      "name": "Selecionar Aluno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        700
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/telegram/{{$('Telegram Trigger').item.json.message.from.id}}/alunos/selecionar",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "nomeAluno",
+              "value": "={{($('Telegram Trigger').item.json.message.text || '').trim()}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "if-aluno-encontrado",
+      "name": "Aluno Encontrado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1540,
+        700
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.encontrado}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "msg-aluno-selecionado",
+      "name": "Confirmar Aluno Selecionado",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1760,
+        650
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "=Aluno {{$json.nomeAluno}} selecionado! Envie o audio da aula quando quiser.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "listar-alunos",
+      "name": "Listar Alunos do Professor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1760,
+        800
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/professores/{{$('Professor Vinculado?').item.json.professorId}}/alunos",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "montar-menu",
+      "name": "Montar Menu de Alunos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1980,
+        800
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const nomes = items.map(item => '- ' + item.json.nome).join('\\n');\nconst texto = nomes\n  ? 'Nao encontrei esse aluno. Alunos disponiveis:\\n' + nomes\n  : 'Voce ainda nao tem alunos cadastrados. Peca ao administrador para cadastrar um aluno vinculado a voce.';\nreturn [{ json: { texto } }];"
+      }
+    },
+    {
+      "id": "msg-menu-alunos",
+      "name": "Enviar Menu de Alunos",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2200,
+        800
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "={{$json.texto}}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "baixar-pdf",
+      "name": "Baixar PDF Gerado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        100
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/relatorios-aula/{{$json.relatorioId}}/pdf",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "exibir-pdf",
+      "name": "Exibir PDF de Conferencia",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        2200,
+        100
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendDocument",
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "binaryData": true,
+        "additionalFields": {
+          "caption": "Relatorio gerado. Responda 'aprovar' para confirmar ou descreva a alteracao desejada (ex.: 'mude a dificuldade para ritmo')."
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "if-comando-cancelar",
+      "name": "Comando Cancelar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1100,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{($('Telegram Trigger').item.json.message.text || '').trim()}}",
+              "rightValue": "cancelar",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "cancelar-relatorio",
+      "name": "Cancelar Relatorio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.BACKEND_BASE_URL}}/internal/v1/relatorios-aula/{{$json.relatorioId}}/cancelar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Service-Token",
+              "value": "={{$env.N8N_SERVICE_TOKEN}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "msg-cancelado",
+      "name": "Confirmar Cancelamento",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1540,
+        260
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "=Relatorio cancelado. Voce pode comecar um novo quando quiser (envie o nome do aluno).",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    },
+    {
+      "id": "if-audio-processado",
+      "name": "Audio Processado com Sucesso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1650,
+        450
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json.relatorioId}}",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "msg-audio-invalido",
+      "name": "Informar Audio Invalido",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1870,
+        500
+      ],
+      "parameters": {
+        "chatId": "={{$('Telegram Trigger').item.json.message.from.id}}",
+        "text": "=Nao consegui processar esse audio (corrompido, formato invalido ou sem fala). Envie novamente, por favor.",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram_bot_credentials",
+          "name": "Telegram Bot - Escola de Musica"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Professor Vinculado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Professor Vinculado?": {
+      "main": [
+        [
+          {
+            "node": "If Vinculado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Vinculado": {
+      "main": [
+        [
+          {
+            "node": "Consultar Rascunho Pendente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tentar Vincular",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tentar Vincular": {
+      "main": [
+        [
+          {
+            "node": "Codigo Valido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Codigo Valido?": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Vinculacao",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pedir Codigo de Vinculacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Rascunho Pendente": {
+      "main": [
+        [
+          {
+            "node": "Ha Rascunho Pendente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ha Rascunho Pendente?": {
+      "main": [
+        [
+          {
+            "node": "Comando Cancelar?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mensagem Tem Audio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Relatorio Atual": {
+      "main": [
+        [
+          {
+            "node": "Tem Pergunta Pendente?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem Pergunta Pendente?": {
+      "main": [
+        [
+          {
+            "node": "Responder Pergunta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decisao e Aprovar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Responder Pergunta": {
+      "main": [
+        [
+          {
+            "node": "Baixar PDF Gerado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decisao e Aprovar?": {
+      "main": [
+        [
+          {
+            "node": "Aprovar Relatorio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Revisar Relatorio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aprovar Relatorio": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Aprovacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Revisar Relatorio": {
+      "main": [
+        [
+          {
+            "node": "Baixar PDF Gerado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem Tem Audio?": {
+      "main": [
+        [
+          {
+            "node": "Baixar Audio Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Selecionar Aluno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar Audio Telegram": {
+      "main": [
+        [
+          {
+            "node": "Baixar Bytes do Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Audio para Backend": {
+      "main": [
+        [
+          {
+            "node": "Audio Processado com Sucesso?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pergunta Pendente Apos Audio?": {
+      "main": [
+        [
+          {
+            "node": "Perguntar Pendencia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Baixar PDF Gerado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Selecionar Aluno": {
+      "main": [
+        [
+          {
+            "node": "Aluno Encontrado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aluno Encontrado?": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Aluno Selecionado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Listar Alunos do Professor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar Alunos do Professor": {
+      "main": [
+        [
+          {
+            "node": "Montar Menu de Alunos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar Menu de Alunos": {
+      "main": [
+        [
+          {
+            "node": "Enviar Menu de Alunos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar PDF Gerado": {
+      "main": [
+        [
+          {
+            "node": "Exibir PDF de Conferencia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar Bytes do Audio": {
+      "main": [
+        [
+          {
+            "node": "Enviar Audio para Backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comando Cancelar?": {
+      "main": [
+        [
+          {
+            "node": "Cancelar Relatorio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Consultar Relatorio Atual",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancelar Relatorio": {
+      "main": [
+        [
+          {
+            "node": "Confirmar Cancelamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Processado com Sucesso?": {
+      "main": [
+        [
+          {
+            "node": "Pergunta Pendente Apos Audio?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Informar Audio Invalido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "description": "Workflow unico substituindo VinculacaoTelegram.json + RegistroAula.json: o Telegram so aceita 1 webhook por bot, entao precisa haver 1 unico Telegram Trigger ativo. Cada mensagem recebida e uma execucao isolada (sem memoria da anterior); todo o estado da conversa (professor vinculado, aluno selecionado, relatorio em andamento) e consultado do backend a cada execucao via /internal/v1/telegram/{telegramUserId}/**. Canal exclusivo de registro de aula -- historico e relatorio semestral ficam fora do escopo deste bot (usar o portal web)."
+  }
+}

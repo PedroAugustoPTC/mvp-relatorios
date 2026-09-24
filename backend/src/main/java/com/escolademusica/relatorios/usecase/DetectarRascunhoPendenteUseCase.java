@@ -77,4 +77,26 @@ public class DetectarRascunhoPendenteUseCase {
 
     return RascunhoPendenteResponseDto.vazio();
   }
+
+  /**
+   * Variante usada pelo bot do Telegram (canal exclusivo de registro de aula, spec de redesenho da
+   * integracao): nao ha alunoId disponivel ainda quando o professor manda uma mensagem solta (ex.:
+   * "aprovar", uma resposta de pergunta pendente) — o n8n precisa descobrir, so' pelo professor, se
+   * ha um relatorio de aula em aberto para rotear a mensagem. Ignora relatorio semestral: esse
+   * continua exclusivo do portal web.
+   */
+  public RascunhoPendenteResponseDto detectarPorProfessor(UUID professorId) {
+    return relatorioAulaRepository
+        .findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(professorId, STATUS_ABERTOS_AULA)
+        .map(
+            relatorio ->
+                new RascunhoPendenteResponseDto(
+                    true,
+                    "AULA",
+                    relatorio.getId(),
+                    relatorio.getStatus().name(),
+                    relatorio.getCanalOrigem().name(),
+                    relatorio.getAtualizadoEm()))
+        .orElseGet(RascunhoPendenteResponseDto::vazio);
+  }
 }

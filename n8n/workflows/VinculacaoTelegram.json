@@ -107,6 +107,22 @@
     },
     {
       "parameters": {
+        "updates": ["message"]
+      },
+      "id": "aguardar-codigo",
+      "name": "Aguardar Codigo de Vinculacao",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [880, -60],
+      "credentials": {
+        "telegramApi": {
+          "id": "telegram-bot-credential",
+          "name": "Telegram Bot (Escola de Musica)"
+        }
+      }
+    },
+    {
+      "parameters": {
         "url": "={{ $env.BACKEND_BASE_URL }}/internal/v1/telegram/vinculacao",
         "method": "POST",
         "sendBody": true,
@@ -210,6 +226,9 @@
       ]
     },
     "Solicitar codigo de vinculacao": {
+      "main": [[{ "node": "Aguardar Codigo de Vinculacao", "type": "main", "index": 0 }]]
+    },
+    "Aguardar Codigo de Vinculacao": {
       "main": [[{ "node": "Enviar codigo de vinculacao", "type": "main", "index": 0 }]]
     },
     "Enviar codigo de vinculacao": {

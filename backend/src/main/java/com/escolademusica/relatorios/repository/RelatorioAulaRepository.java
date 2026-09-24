@@ -31,4 +31,13 @@ public interface RelatorioAulaRepository extends JpaRepository<RelatorioAula, UU
    */
   Optional<RelatorioAula> findFirstByProfessorIdAndAlunoIdAndStatusInOrderByAtualizadoEmDesc(
       UUID professorId, UUID alunoId, Collection<StatusRelatorioAula> status);
+
+  /**
+   * Rascunho/pendencia mais recente de um professor em QUALQUER aluno, usado pelo bot do Telegram
+   * (canal exclusivo de registro de aula) para rotear uma mensagem recebida sem precisar de estado
+   * guardado no n8n: cada mensagem e uma execucao isolada que consulta o backend para saber se ha
+   * um relatorio em andamento.
+   */
+  Optional<RelatorioAula> findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(
+      UUID professorId, Collection<StatusRelatorioAula> status);
 }

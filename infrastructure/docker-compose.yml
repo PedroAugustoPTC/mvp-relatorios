@@ -115,6 +115,10 @@ services:
       # Credenciais usadas pelos workflows para chamar a API do backend
       BACKEND_BASE_URL: http://backend:8080
       N8N_SERVICE_TOKEN: ${N8N_SERVICE_TOKEN}
+      # Sem isto, versoes recentes do n8n bloqueiam "$env.*" dentro de expressoes dos nodes
+      # (ExpressionError: access to env vars denied) -- todos os workflows deste projeto dependem
+      # de $env.BACKEND_BASE_URL / $env.N8N_SERVICE_TOKEN para chamar o backend.
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       STT_API_KEY: ${STT_API_KEY}
       LLM_API_KEY: ${LLM_API_KEY}

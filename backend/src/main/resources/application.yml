@@ -5,6 +5,13 @@ spring:
   application:
     name: relatorios-backend
 
+  # Default do Spring Boot (1MB por arquivo) e menor que poucos minutos de audio de aula
+  # gravado no navegador; alinhado ao client_max_body_size do nginx do frontend.
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -68,6 +75,7 @@ pdf:
 
 escola:
   nome: ${ESCOLA_NOME:Escola de Música}
+  timezone: ${ESCOLA_TIMEZONE:America/Sao_Paulo}
 
 springdoc:
   api-docs:
