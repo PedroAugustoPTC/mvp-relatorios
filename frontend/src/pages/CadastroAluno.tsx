@@ -14,10 +14,33 @@ function iniciais(nome: string): string {
     .join('');
 }
 
+/**
+ * Mascara dd/mm/aaaa aplicada a partir dos digitos ja tratados: o input nativo `type="date"` segue
+ * o idioma do navegador (que pode exibir mm/dd/aaaa), por isso a data de nascimento usa um campo de
+ * texto mascarado no padrao brasileiro.
+ */
+function formatarDataDigitada(valor: string): string {
+  const digitos = valor.replace(/\D/g, '').slice(0, 8);
+  const dia = digitos.slice(0, 2);
+  const mes = digitos.slice(2, 4);
+  const ano = digitos.slice(4, 8);
+  return [dia, mes, ano].filter((parte) => parte.length > 0).join('/');
+}
+
+/** Converte dd/mm/aaaa para o formato ISO (aaaa-mm-dd) esperado pela API; vazio se incompleta. */
+function paraIso(dataBr: string): string {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dataBr);
+  if (!match) {
+    return '';
+  }
+  const [, dia, mes, ano] = match;
+  return `${ano}-${mes}-${dia}`;
+}
+
 /** Cadastro de aluno pela interface administrativa (T070, FR-001/FR-001a). */
 function CadastroAluno(): JSX.Element {
   const [nome, setNome] = useState('');
-  const [dataNascimento, setDataNascimento] = useState('');
+  const [dataNascimentoTexto, setDataNascimentoTexto] = useState('');
   const [cpf, setCpf] = useState('');
   const [nomeResponsavel, setNomeResponsavel] = useState('');
   const [professorIds, setProfessorIds] = useState<string[]>([]);
@@ -26,7 +49,8 @@ function CadastroAluno(): JSX.Element {
   const [enviando, setEnviando] = useState(false);
   const [alunoCriado, setAlunoCriado] = useState<Aluno | null>(null);
 
-  const menorDeIdade = isMenorDeIdade(dataNascimento);
+  const dataNascimentoIso = paraIso(dataNascimentoTexto);
+  const menorDeIdade = isMenorDeIdade(dataNascimentoIso);
 
   useEffect(() => {
     listarProfessores()
@@ -43,6 +67,11 @@ function CadastroAluno(): JSX.Element {
     event.preventDefault();
     setErro(null);
 
+    if (!dataNascimentoIso) {
+      setErro('Data de nascimento invalida. Use o formato dd/mm/aaaa.');
+      return;
+    }
+
     if (menorDeIdade && !nomeResponsavel.trim()) {
       setErro('Nome do responsavel e obrigatorio para alunos menores de idade.');
       return;
@@ -52,14 +81,14 @@ function CadastroAluno(): JSX.Element {
     try {
       const aluno = await cadastrarAluno({
         nome,
-        dataNascimento,
+        dataNascimento: dataNascimentoIso,
         cpf,
         nomeResponsavel: menorDeIdade ? nomeResponsavel : nomeResponsavel || undefined,
         professorIds,
       });
       setAlunoCriado(aluno);
       setNome('');
-      setDataNascimento('');
+      setDataNascimentoTexto('');
       setCpf('');
       setNomeResponsavel('');
       setProfessorIds([]);
@@ -108,10 +137,13 @@ function CadastroAluno(): JSX.Element {
             className="adm-entrada"
             id="dataNascimento"
             name="dataNascimento"
-            type="date"
+            type="text"
+            inputMode="numeric"
+            placeholder="dd/mm/aaaa"
+            maxLength={10}
             required
-            value={dataNascimento}
-            onChange={(event) => setDataNascimento(event.target.value)}
+            value={dataNascimentoTexto}
+            onChange={(event) => setDataNascimentoTexto(formatarDataDigitada(event.target.value))}
           />
         </div>
         <div className="adm-campo">
