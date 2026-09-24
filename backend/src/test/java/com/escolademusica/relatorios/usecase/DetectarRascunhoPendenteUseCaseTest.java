@@ -145,4 +145,74 @@ class DetectarRascunhoPendenteUseCaseTest {
     assertThat(resultado.canalOrigem()).isNull();
     assertThat(resultado.atualizadoEm()).isNull();
   }
+
+  /**
+   * {@link DetectarRascunhoPendenteUseCase#detectarPorProfessor}: variante usada pelo bot do
+   * Telegram, que ainda nao sabe o alunoId quando o professor manda uma mensagem solta — precisa
+   * achar o rascunho em aberto olhando so pelo professor, em qualquer aluno.
+   */
+  @Test
+  void detectarPorProfessorDeveEncontrarRascunhoDeAulaEmQualquerAluno() {
+    OffsetDateTime atualizadoEm = OffsetDateTime.now().minusMinutes(10);
+    RelatorioAula relatorio = new RelatorioAula();
+    UUID relatorioId = UUID.randomUUID();
+    relatorio.setId(relatorioId);
+    relatorio.setStatus(StatusRelatorioAula.RASCUNHO);
+    relatorio.setCanalOrigem(CanalOrigem.TELEGRAM);
+    relatorio.setAtualizadoEm(atualizadoEm);
+    when(relatorioAulaRepository.findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(
+            eq(professorId), any()))
+        .thenReturn(Optional.of(relatorio));
+
+    RascunhoPendenteResponseDto resultado = useCase.detectarPorProfessor(professorId);
+
+    assertThat(resultado.existeRascunho()).isTrue();
+    assertThat(resultado.tipo()).isEqualTo("AULA");
+    assertThat(resultado.relatorioId()).isEqualTo(relatorioId);
+    assertThat(resultado.status()).isEqualTo("RASCUNHO");
+    assertThat(resultado.canalOrigem()).isEqualTo("TELEGRAM");
+  }
+
+  @Test
+  void detectarPorProfessorDeveConsultarApenasStatusEmAberto() {
+    when(relatorioAulaRepository.findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(
+            any(), any()))
+        .thenReturn(Optional.empty());
+
+    useCase.detectarPorProfessor(professorId);
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Collection<StatusRelatorioAula>> captor =
+        ArgumentCaptor.forClass(Collection.class);
+    verify(relatorioAulaRepository)
+        .findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(
+            eq(professorId), captor.capture());
+
+    assertThat(captor.getValue())
+        .containsExactlyInAnyOrder(
+            StatusRelatorioAula.RASCUNHO, StatusRelatorioAula.PENDENTE_REVISAO);
+  }
+
+  @Test
+  void detectarPorProfessorNuncaConsultaRelatorioSemestral() {
+    when(relatorioAulaRepository.findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(
+            any(), any()))
+        .thenReturn(Optional.empty());
+
+    useCase.detectarPorProfessor(professorId);
+
+    verify(relatorioSemestralRepository, never())
+        .findFirstByProfessorIdAndAlunoIdAndStatusInOrderByAtualizadoEmDesc(any(), any(), any());
+  }
+
+  @Test
+  void detectarPorProfessorDeveResponderVazioQuandoNaoHaNenhumRascunho() {
+    when(relatorioAulaRepository.findFirstByProfessorIdAndStatusInOrderByAtualizadoEmDesc(
+            any(), any()))
+        .thenReturn(Optional.empty());
+
+    RascunhoPendenteResponseDto resultado = useCase.detectarPorProfessor(professorId);
+
+    assertThat(resultado.existeRascunho()).isFalse();
+  }
 }

@@ -8,7 +8,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.escolademusica.relatorios.controller.RelatorioAulaController;
 import com.escolademusica.relatorios.dto.EstruturarRelatorioResponseDto;
+import com.escolademusica.relatorios.mapper.RelatorioAulaMapper;
+import com.escolademusica.relatorios.repository.RelatorioAulaRepository;
+import com.escolademusica.relatorios.service.PdfGeracaoService;
 import com.escolademusica.relatorios.usecase.AprovarRelatorioAulaUseCase;
+import com.escolademusica.relatorios.usecase.CancelarRelatorioAulaUseCase;
 import com.escolademusica.relatorios.usecase.EstruturarRelatorioUseCase;
 import com.escolademusica.relatorios.usecase.RegistrarAulaUseCase;
 import com.escolademusica.relatorios.usecase.ResponderPerguntaUseCase;
@@ -42,6 +46,10 @@ class RegistroAulaEstruturarContractTest {
   @MockBean private ResponderPerguntaUseCase responderPerguntaUseCase;
   @MockBean private RevisarRelatorioAulaUseCase revisarRelatorioAulaUseCase;
   @MockBean private AprovarRelatorioAulaUseCase aprovarRelatorioAulaUseCase;
+  @MockBean private CancelarRelatorioAulaUseCase cancelarRelatorioAulaUseCase;
+  @MockBean private RelatorioAulaRepository relatorioAulaRepository;
+  @MockBean private PdfGeracaoService pdfGeracaoService;
+  @MockBean private RelatorioAulaMapper mapper;
 
   @Test
   void estruturarComPerguntasPendentesRetornaTodosOsCamposEPdfUrlNulo() throws Exception {
