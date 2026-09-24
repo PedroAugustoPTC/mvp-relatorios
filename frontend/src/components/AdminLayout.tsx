@@ -20,7 +20,7 @@ interface ItemNavegacao {
 }
 
 const ITENS_NAVEGACAO: ItemNavegacao[] = [
-  { rota: '/professores/novo', rotulo: 'Professores', icone: '♪' },
+  { rota: '/professores', rotulo: 'Professores', icone: '♪' },
   { rota: '/alunos/novo', rotulo: 'Alunos', icone: '☰' },
   { rota: '/historico', rotulo: 'Histórico', icone: '◷' },
 ];

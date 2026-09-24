@@ -1,0 +1,60 @@
+.adm-professores__cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.adm-professores__tabela-wrapper {
+  margin-top: 20px;
+  padding: 0;
+  overflow-x: auto;
+}
+
+.adm-professores__tabela {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.adm-professores__tabela th,
+.adm-professores__tabela td {
+  padding: 14px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--adm-borda);
+  font-size: 0.92rem;
+}
+
+.adm-professores__tabela th {
+  color: var(--adm-texto-suave);
+  font-weight: 600;
+}
+
+.adm-professores__tabela tbody tr:last-of-type td {
+  border-bottom: none;
+}
+
+.adm-professores__linha-codigo td {
+  padding-top: 0;
+  border-bottom: 1px solid var(--adm-borda);
+}
+
+.adm-professores__codigo {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: var(--adm-raio-campo);
+  background-color: var(--adm-surface-sutil);
+  border: 1px solid var(--adm-borda);
+}
+
+.adm-professores__codigo-valor {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.adm-professores__codigo-validade {
+  color: var(--adm-texto-suave);
+  font-size: 0.85rem;
+}
