@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.escolademusica.relatorios.domain.Professor;
 import com.escolademusica.relatorios.repository.ProfessorRepository;
+import java.time.Duration;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,5 +57,15 @@ class CodigoVinculacaoGeneratorTest {
 
     assertThatThrownBy(() -> generator.gerarCodigoUnico())
         .isInstanceOf(IllegalStateException.class);
+  }
+
+  /**
+   * Validade estendida de 24h (original) para 7 dias, para reduzir a friccao de professores que
+   * usam o portal com pouca frequencia (a validade tambem e renovada a cada login bem-sucedido, ver
+   * AutenticarProfessorPortalUseCase).
+   */
+  @Test
+  void validadeDoCodigoDeveSerDeSeteDias() {
+    assertThat(CodigoVinculacaoGenerator.VALIDADE).isEqualTo(Duration.ofDays(7));
   }
 }

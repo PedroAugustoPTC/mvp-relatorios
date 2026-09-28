@@ -2,6 +2,7 @@ package com.escolademusica.relatorios.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -14,10 +15,12 @@ import com.escolademusica.relatorios.repository.ProfessorRepository;
 import com.escolademusica.relatorios.service.JwtService;
 import com.escolademusica.relatorios.service.RateLimiterAutenticacaoWebService;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 /** Testes de {@link AutenticarProfessorPortalUseCase} (T055, FR-003/FR-004/FR-004a). */
@@ -82,7 +85,38 @@ class AutenticarProfessorPortalUseCaseTest {
     AutenticarProfessorPortalUseCase.Resultado segunda = useCase.autenticar(ORIGEM, CODIGO);
 
     assertThat(segunda.professorId()).isEqualTo(primeira.professorId());
-    // Nenhum professor novo e criado nem alterado — a autenticacao web e apenas leitura + JWT.
+    // Nenhum professor NOVO e criado — so o mesmo professor tem a validade do codigo renovada
+    // (ver deveEstenderAValidadeDoCodigoAoAutenticarComSucesso), nunca outro registro.
+    verify(professorRepository, org.mockito.Mockito.times(2)).save(professor);
+  }
+
+  /**
+   * Renovacao automatica (reducao de friccao): cada login bem-sucedido no portal estende a validade
+   * do codigo por mais {@link CodigoVinculacaoGenerator#VALIDADE} (7 dias) a partir de agora — um
+   * professor que usa o portal com regularidade nunca ve o codigo expirar.
+   */
+  @Test
+  void deveEstenderAValidadeDoCodigoEmSeteDiasAoAutenticarComSucesso() {
+    Professor professor = professorComCodigoValido();
+    when(professorRepository.findByCodigoVinculacao(CODIGO)).thenReturn(Optional.of(professor));
+    prepararJwt();
+
+    useCase.autenticar(ORIGEM, CODIGO);
+
+    ArgumentCaptor<Professor> captor = ArgumentCaptor.forClass(Professor.class);
+    verify(professorRepository).save(captor.capture());
+    OffsetDateTime novaExpiracao = captor.getValue().getCodigoVinculacaoExpiraEm();
+    OffsetDateTime esperado = OffsetDateTime.now().plusDays(7);
+    assertThat(novaExpiracao).isCloseTo(esperado, within(1, ChronoUnit.MINUTES));
+  }
+
+  @Test
+  void naoDeveEstenderAValidadeQuandoACodigoInvalidoENuncaChegaAAutenticar() {
+    when(professorRepository.findByCodigoVinculacao("NAOEXISTE")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> useCase.autenticar(ORIGEM, "NAOEXISTE"))
+        .isInstanceOf(CodigoVinculacaoInvalidoException.class);
+
     verify(professorRepository, never()).save(Mockito.any());
   }
 

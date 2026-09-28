@@ -19,8 +19,13 @@ public class CodigoVinculacaoGenerator {
   private static final int TAMANHO_CODIGO = 8;
   private static final int MAX_TENTATIVAS = 10;
 
-  /** Validade do codigo apos a geracao: 24 horas (decisao documentada em research.md secao 7). */
-  public static final Duration VALIDADE = Duration.ofHours(24);
+  /**
+   * Validade do codigo apos a geracao/reemissao: 7 dias. Aumentado a partir das 24h originais
+   * (research.md secao 7) para reduzir a friccao de professores que usam o portal web com pouca
+   * frequencia — a validade tambem e renovada a cada login bem-sucedido no portal (ver {@link
+   * AutenticarProfessorPortalUseCase}), entao o uso continuo nunca deixa o codigo expirar.
+   */
+  public static final Duration VALIDADE = Duration.ofDays(7);
 
   private final ProfessorRepository professorRepository;
   private final SecureRandom random = new SecureRandom();

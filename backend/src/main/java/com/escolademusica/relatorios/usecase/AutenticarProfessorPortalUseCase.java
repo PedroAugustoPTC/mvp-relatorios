@@ -27,6 +27,11 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>O rate limit e aplicado ANTES da validacao do codigo e a contagem so e zerada em caso de
  * sucesso, para que tentativas automatizadas sejam efetivamente barradas.
+ *
+ * <p><b>Renovacao automatica (reducao de friccao):</b> cada autenticacao bem-sucedida estende
+ * {@code codigoVinculacaoExpiraEm} por mais {@link CodigoVinculacaoGenerator#VALIDADE}. Um
+ * professor que usa o portal com regularidade nunca ve o codigo expirar; so quem fica muito tempo
+ * sem logar precisa pedir um novo a secretaria.
  */
 @Service
 public class AutenticarProfessorPortalUseCase {
@@ -66,6 +71,9 @@ public class AutenticarProfessorPortalUseCase {
     }
 
     rateLimiter.registrarSucesso(identificadorOrigem);
+
+    professor.setCodigoVinculacaoExpiraEm(agora.plus(CodigoVinculacaoGenerator.VALIDADE));
+    professorRepository.save(professor);
 
     JwtService.TokenGerado token = jwtService.gerarTokenProfessor(professor.getId());
     return new Resultado(token.token(), token.expiraEm(), professor.getId(), professor.getNome());
