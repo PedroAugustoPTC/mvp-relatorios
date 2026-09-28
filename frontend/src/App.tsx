@@ -4,6 +4,7 @@ import CadastroAluno from './pages/CadastroAluno';
 import CadastroProfessor from './pages/CadastroProfessor';
 import HistoricoAluno from './pages/HistoricoAluno';
 import Login from './pages/Login';
+import Professores from './pages/Professores';
 import RotaProtegidaPortal from './portal/components/RotaProtegidaPortal';
 import SessaoProfessorProvider from './portal/components/SessaoProfessorProvider';
 import PortalLayout from './portal/layout/PortalLayout';
@@ -34,6 +35,7 @@ function App(): JSX.Element {
         {/* Interface administrativa (spec 001) */}
         <Route path="/login" element={<Login />} />
         <Route element={<RotaProtegida />}>
+          <Route path="/professores" element={<Professores />} />
           <Route path="/professores/novo" element={<CadastroProfessor />} />
           <Route path="/alunos/novo" element={<CadastroAluno />} />
           <Route path="/historico" element={<HistoricoAluno />} />
