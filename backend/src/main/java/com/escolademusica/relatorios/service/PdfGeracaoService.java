@@ -19,7 +19,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +44,14 @@ public class PdfGeracaoService {
    * origem do frontend e cairia no fallback SPA do Nginx (devolvendo o index.html no lugar do PDF).
    */
   public static final String URL_BASE_PDF = "/api/v1/arquivos/relatorios";
+
+  /**
+   * Nomes aceitos, exatamente no formato produzido por {@link #gerarEArmazenar}. Compartilhado por
+   * {@code ArquivoRelatorioController} (canal web) e pelo endpoint interno de download usado pelo
+   * n8n (canal Telegram) — a validacao e o que impede path traversal.
+   */
+  public static final Pattern NOME_ARQUIVO_VALIDO =
+      Pattern.compile("relatorio-(aula|semestral)-[0-9a-f-]{36}-v\\d+\\.pdf");
 
   private static final DateTimeFormatter FORMATO_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -96,6 +106,26 @@ public class PdfGeracaoService {
       return URL_BASE_PDF + "/" + nomeArquivo;
     } catch (IOException e) {
       throw new UncheckedIOException("Falha ao gravar PDF no storage: " + nomeArquivo, e);
+    }
+  }
+
+  /**
+   * Le do storage o PDF ja gerado com o nome informado, validando o formato do nome antes de tocar
+   * o filesystem. Vazio se o nome nao bater com {@link #NOME_ARQUIVO_VALIDO} ou o arquivo nao
+   * existir.
+   */
+  public Optional<byte[]> lerPdf(String nomeArquivo) {
+    if (!NOME_ARQUIVO_VALIDO.matcher(nomeArquivo).matches()) {
+      return Optional.empty();
+    }
+    Path caminhoArquivo = storageBasePath.resolve(nomeArquivo);
+    if (!Files.isRegularFile(caminhoArquivo)) {
+      return Optional.empty();
+    }
+    try {
+      return Optional.of(Files.readAllBytes(caminhoArquivo));
+    } catch (IOException e) {
+      throw new UncheckedIOException("Falha ao ler PDF do storage: " + nomeArquivo, e);
     }
   }
 

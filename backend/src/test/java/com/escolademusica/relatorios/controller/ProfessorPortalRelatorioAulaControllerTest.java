@@ -25,6 +25,7 @@ import com.escolademusica.relatorios.gateway.AudioNaoProcessavelException;
 import com.escolademusica.relatorios.mapper.RelatorioAulaMapper;
 import com.escolademusica.relatorios.repository.RelatorioAulaRepository;
 import com.escolademusica.relatorios.service.ControleAcessoProfessorService;
+import com.escolademusica.relatorios.service.RelogioEscola;
 import com.escolademusica.relatorios.usecase.AprovarRelatorioAulaUseCase;
 import com.escolademusica.relatorios.usecase.CancelarRelatorioAulaUseCase;
 import com.escolademusica.relatorios.usecase.EstruturarRelatorioUseCase;
@@ -71,6 +72,7 @@ class ProfessorPortalRelatorioAulaControllerTest {
   @MockBean private CancelarRelatorioAulaUseCase cancelarRelatorioAulaUseCase;
   @MockBean private RelatorioAulaRepository relatorioAulaRepository;
   @MockBean private RelatorioAulaMapper mapper;
+  @MockBean private RelogioEscola relogioEscola;
 
   private final UUID professorId = UUID.randomUUID();
   private final UUID alunoId = UUID.randomUUID();
@@ -228,6 +230,8 @@ class ProfessorPortalRelatorioAulaControllerTest {
 
   @Test
   void deveAssumirADataDeHojeQuandoNenhumaDataEInformada() throws Exception {
+    LocalDate hoje = LocalDate.of(2026, 9, 24);
+    when(relogioEscola.hoje()).thenReturn(hoje);
     prepararEnvioBemSucedido(List.of(), "PENDENTE_REVISAO");
 
     mockMvc
@@ -236,8 +240,7 @@ class ProfessorPortalRelatorioAulaControllerTest {
                 .file(audio()))
         .andExpect(status().isAccepted());
 
-    verify(registrarAulaUseCase)
-        .registrar(eq(professorId), eq(alunoId), eq(LocalDate.now()), any(), any());
+    verify(registrarAulaUseCase).registrar(eq(professorId), eq(alunoId), eq(hoje), any(), any());
   }
 
   @Test

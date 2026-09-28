@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.escolademusica.relatorios.service.PdfGeracaoService;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -20,10 +22,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Testes de fatia de {@link ArquivoRelatorioController}: o download do PDF a partir do volume de
- * storage e a validacao do nome do arquivo, que e o que impede path traversal.
+ * storage e a validacao do nome do arquivo, que e o que impede path traversal (agora delegada a
+ * {@link PdfGeracaoService#lerPdf}, compartilhada com o endpoint interno usado pelo bot do
+ * Telegram). A instancia real do servico e usada aqui ({@code @Import}), nao um mock, para manter a
+ * cobertura de ponta a ponta da validacao contra o filesystem.
  */
 @WebMvcTest(controllers = ArquivoRelatorioController.class)
 @AutoConfigureMockMvc(addFilters = false)
+@Import(PdfGeracaoService.class)
 class ArquivoRelatorioControllerTest {
 
   @TempDir static Path storage;

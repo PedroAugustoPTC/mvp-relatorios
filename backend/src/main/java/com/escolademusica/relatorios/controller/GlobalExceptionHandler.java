@@ -19,6 +19,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /**
  * Tratamento centralizado de excecoes, produzindo sempre o DTO padrao {@link ErroDto} ({@code
@@ -68,6 +69,16 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErroDto> tratarAudioNaoProcessavel(AudioNaoProcessavelException ex) {
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
         .body(new ErroDto("AUDIO_NAO_PROCESSAVEL", ex.getMessage()));
+  }
+
+  /** Audio (ou requisicao multipart) maior que o limite configurado (spring.servlet.multipart). */
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<ErroDto> tratarAudioMuitoGrande(MaxUploadSizeExceededException ex) {
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+        .body(
+            new ErroDto(
+                "AUDIO_MUITO_GRANDE",
+                "O audio enviado e maior que o limite permitido. Grave um trecho mais curto."));
   }
 
   /** Periodo sem nenhum relatorio de aula aprovado — nao gera relatorio semestral (FR-014). */

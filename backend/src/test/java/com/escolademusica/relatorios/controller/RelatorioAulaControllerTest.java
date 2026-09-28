@@ -3,22 +3,31 @@ package com.escolademusica.relatorios.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.escolademusica.relatorios.domain.RelatorioAula;
 import com.escolademusica.relatorios.dto.AprovarRelatorioResponseDto;
 import com.escolademusica.relatorios.dto.EstruturarRelatorioResponseDto;
 import com.escolademusica.relatorios.gateway.AudioNaoProcessavelException;
+import com.escolademusica.relatorios.mapper.RelatorioAulaMapper;
+import com.escolademusica.relatorios.repository.RelatorioAulaRepository;
+import com.escolademusica.relatorios.service.PdfGeracaoService;
 import com.escolademusica.relatorios.usecase.AprovarRelatorioAulaUseCase;
+import com.escolademusica.relatorios.usecase.CancelarRelatorioAulaUseCase;
 import com.escolademusica.relatorios.usecase.EstruturarRelatorioUseCase;
 import com.escolademusica.relatorios.usecase.RegistrarAulaUseCase;
 import com.escolademusica.relatorios.usecase.ResponderPerguntaUseCase;
 import com.escolademusica.relatorios.usecase.RevisarRelatorioAulaUseCase;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +54,10 @@ class RelatorioAulaControllerTest {
   @MockBean private ResponderPerguntaUseCase responderPerguntaUseCase;
   @MockBean private RevisarRelatorioAulaUseCase revisarRelatorioAulaUseCase;
   @MockBean private AprovarRelatorioAulaUseCase aprovarRelatorioAulaUseCase;
+  @MockBean private CancelarRelatorioAulaUseCase cancelarRelatorioAulaUseCase;
+  @MockBean private RelatorioAulaRepository relatorioAulaRepository;
+  @MockBean private PdfGeracaoService pdfGeracaoService;
+  @MockBean private RelatorioAulaMapper mapper;
 
   @Test
   void deveTranscreverComSucesso() throws Exception {
@@ -138,5 +151,85 @@ class RelatorioAulaControllerTest {
                 .content("{\"versaoConfirmada\": 1}"))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.codigo").value("CONFLITO"));
+  }
+
+  @Test
+  void deveCancelarORascunho() throws Exception {
+    UUID relatorioId = UUID.randomUUID();
+
+    mockMvc
+        .perform(post("/internal/v1/relatorios-aula/{relatorioId}/cancelar", relatorioId))
+        .andExpect(status().isOk());
+
+    verify(cancelarRelatorioAulaUseCase).cancelar(relatorioId);
+  }
+
+  @Test
+  void deveConsultarOEstadoAtualDoRelatorio() throws Exception {
+    UUID relatorioId = UUID.randomUUID();
+    RelatorioAula relatorio = new RelatorioAula();
+    relatorio.setId(relatorioId);
+    when(relatorioAulaRepository.findById(relatorioId)).thenReturn(Optional.of(relatorio));
+    when(mapper.perguntasPendentesDe(relatorio)).thenReturn(List.of());
+    when(mapper.paraResponseDto(eq(relatorio), eq(List.of())))
+        .thenReturn(
+            new EstruturarRelatorioResponseDto(
+                relatorioId,
+                "PENDENTE_REVISAO",
+                List.of(),
+                null,
+                List.of(),
+                List.of(),
+                "",
+                List.of(),
+                "/storage/pdfs/relatorio.pdf",
+                1));
+
+    mockMvc
+        .perform(get("/internal/v1/relatorios-aula/{relatorioId}", relatorioId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.relatorioId").value(relatorioId.toString()))
+        .andExpect(jsonPath("$.status").value("PENDENTE_REVISAO"));
+  }
+
+  @Test
+  void deveDevolver404AoConsultarRelatorioInexistente() throws Exception {
+    UUID relatorioId = UUID.randomUUID();
+    when(relatorioAulaRepository.findById(relatorioId)).thenReturn(Optional.empty());
+
+    mockMvc
+        .perform(get("/internal/v1/relatorios-aula/{relatorioId}", relatorioId))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.codigo").value("RECURSO_NAO_ENCONTRADO"));
+  }
+
+  @Test
+  void deveBaixarOPdfVigenteDoRelatorio() throws Exception {
+    UUID relatorioId = UUID.randomUUID();
+    RelatorioAula relatorio = new RelatorioAula();
+    relatorio.setId(relatorioId);
+    relatorio.setPdfUrl(
+        "/api/v1/arquivos/relatorios/relatorio-aula-%s-v1.pdf".formatted(relatorioId));
+    when(relatorioAulaRepository.findById(relatorioId)).thenReturn(Optional.of(relatorio));
+    when(pdfGeracaoService.lerPdf("relatorio-aula-%s-v1.pdf".formatted(relatorioId)))
+        .thenReturn(Optional.of("conteudo-pdf".getBytes()));
+
+    mockMvc
+        .perform(get("/internal/v1/relatorios-aula/{relatorioId}/pdf", relatorioId))
+        .andExpect(status().isOk())
+        .andExpect(content().bytes("conteudo-pdf".getBytes()));
+  }
+
+  @Test
+  void deveDevolver404AoBaixarPdfDeRelatorioSemPdfGerado() throws Exception {
+    UUID relatorioId = UUID.randomUUID();
+    RelatorioAula relatorio = new RelatorioAula();
+    relatorio.setId(relatorioId);
+
+    when(relatorioAulaRepository.findById(relatorioId)).thenReturn(Optional.of(relatorio));
+
+    mockMvc
+        .perform(get("/internal/v1/relatorios-aula/{relatorioId}/pdf", relatorioId))
+        .andExpect(status().isNotFound());
   }
 }

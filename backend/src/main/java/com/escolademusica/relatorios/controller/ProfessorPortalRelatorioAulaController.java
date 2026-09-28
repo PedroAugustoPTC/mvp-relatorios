@@ -12,6 +12,7 @@ import com.escolademusica.relatorios.dto.RevisarRelatorioRequestDto;
 import com.escolademusica.relatorios.mapper.RelatorioAulaMapper;
 import com.escolademusica.relatorios.repository.RelatorioAulaRepository;
 import com.escolademusica.relatorios.service.ControleAcessoProfessorService;
+import com.escolademusica.relatorios.service.RelogioEscola;
 import com.escolademusica.relatorios.usecase.AprovarRelatorioAulaUseCase;
 import com.escolademusica.relatorios.usecase.CancelarRelatorioAulaUseCase;
 import com.escolademusica.relatorios.usecase.EstruturarRelatorioUseCase;
@@ -78,6 +79,7 @@ public class ProfessorPortalRelatorioAulaController {
   private final CancelarRelatorioAulaUseCase cancelarRelatorioAulaUseCase;
   private final RelatorioAulaRepository relatorioAulaRepository;
   private final RelatorioAulaMapper mapper;
+  private final RelogioEscola relogioEscola;
 
   public ProfessorPortalRelatorioAulaController(
       ControleAcessoProfessorService controleAcesso,
@@ -88,7 +90,8 @@ public class ProfessorPortalRelatorioAulaController {
       AprovarRelatorioAulaUseCase aprovarRelatorioAulaUseCase,
       CancelarRelatorioAulaUseCase cancelarRelatorioAulaUseCase,
       RelatorioAulaRepository relatorioAulaRepository,
-      RelatorioAulaMapper mapper) {
+      RelatorioAulaMapper mapper,
+      RelogioEscola relogioEscola) {
     this.controleAcesso = controleAcesso;
     this.registrarAulaUseCase = registrarAulaUseCase;
     this.estruturarRelatorioUseCase = estruturarRelatorioUseCase;
@@ -98,6 +101,7 @@ public class ProfessorPortalRelatorioAulaController {
     this.cancelarRelatorioAulaUseCase = cancelarRelatorioAulaUseCase;
     this.relatorioAulaRepository = relatorioAulaRepository;
     this.mapper = mapper;
+    this.relogioEscola = relogioEscola;
   }
 
   /** {@code POST /api/v1/professor/alunos/{alunoId}/relatorios-aula/audio} (multipart) */
@@ -126,7 +130,7 @@ public class ProfessorPortalRelatorioAulaController {
         registrarAulaUseCase.registrar(
             professorId,
             alunoId,
-            dataAula != null ? dataAula : LocalDate.now(),
+            dataAula != null ? dataAula : relogioEscola.hoje(),
             audioBytes,
             extrairFormato(audio));
 
