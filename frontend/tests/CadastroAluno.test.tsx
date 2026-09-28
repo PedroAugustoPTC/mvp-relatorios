@@ -27,7 +27,7 @@ describe('CadastroAluno', () => {
     render(<CadastroAluno />);
 
     await userEvent.type(screen.getByLabelText(/nome/i), 'Joao Adulto');
-    await userEvent.type(screen.getByLabelText(/data de nascimento/i), '1990-01-01');
+    await userEvent.type(screen.getByLabelText(/data de nascimento/i), '01011990');
     await userEvent.type(screen.getByLabelText(/cpf/i), '11122233344');
 
     expect(screen.queryByLabelText(/nome do responsavel/i)).not.toBeInTheDocument();
@@ -44,7 +44,7 @@ describe('CadastroAluno', () => {
     render(<CadastroAluno />);
 
     await userEvent.type(screen.getByLabelText(/nome/i), 'Crianca');
-    await userEvent.type(screen.getByLabelText(/data de nascimento/i), `${anoMenor}-01-01`);
+    await userEvent.type(screen.getByLabelText(/data de nascimento/i), `0101${anoMenor}`);
     await userEvent.type(screen.getByLabelText(/cpf/i), '55566677788');
 
     expect(screen.getByLabelText(/nome do responsavel/i)).toBeInTheDocument();
@@ -53,6 +53,30 @@ describe('CadastroAluno', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       /nome do responsavel e obrigatorio/i,
+    );
+    expect(alunoService.cadastrarAluno).not.toHaveBeenCalled();
+  });
+
+  it('formata a data digitada como dd/mm/aaaa conforme o usuario digita', async () => {
+    vi.mocked(professorService.listarProfessores).mockResolvedValue([]);
+    render(<CadastroAluno />);
+
+    await userEvent.type(screen.getByLabelText(/data de nascimento/i), '25121990');
+
+    expect(screen.getByLabelText(/data de nascimento/i)).toHaveValue('25/12/1990');
+  });
+
+  it('bloqueia o envio com mensagem clara quando a data esta incompleta', async () => {
+    vi.mocked(professorService.listarProfessores).mockResolvedValue([]);
+    render(<CadastroAluno />);
+
+    await userEvent.type(screen.getByLabelText(/nome/i), 'Joao Incompleto');
+    await userEvent.type(screen.getByLabelText(/data de nascimento/i), '0112');
+    await userEvent.type(screen.getByLabelText(/cpf/i), '99988877766');
+    await userEvent.click(screen.getByRole('button', { name: /cadastrar/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /data de nascimento invalida.*dd\/mm\/aaaa/i,
     );
     expect(alunoService.cadastrarAluno).not.toHaveBeenCalled();
   });

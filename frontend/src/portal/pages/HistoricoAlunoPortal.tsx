@@ -8,8 +8,23 @@ import { professorApiClient } from '../services/professorApiClient';
  * pelo Telegram ou pelo proprio portal, em uma unica lista cronologica.
  */
 
+/**
+ * Datas "puras" (LocalDate do backend, ex.: dataAula/periodoInicio/periodoFim) chegam como
+ * "AAAA-MM-DD", sem horario nem fuso. `new Date("AAAA-MM-DD")` interpreta isso como meia-noite UTC,
+ * e converter de volta para o fuso local pode exibir o dia anterior (ex.: 21h de 06/09 em
+ * UTC-3 para uma data que era 07/09) -- por isso formatamos essas direto da string, sem passar por
+ * Date. Timestamps completos (com hora e fuso, ex.: aprovadoEm) continuam via Date normalmente.
+ */
 function formatarData(valor: string | null): string {
-  return valor ? new Date(valor).toLocaleDateString('pt-BR') : '—';
+  if (!valor) {
+    return '—';
+  }
+  const somenteData = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+  if (somenteData) {
+    const [, ano, mes, dia] = somenteData;
+    return `${dia}/${mes}/${ano}`;
+  }
+  return new Date(valor).toLocaleDateString('pt-BR');
 }
 
 function descricao(
